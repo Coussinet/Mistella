@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "YoruConnect",
+    "slug": "yoruconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "yoruconnect",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yoruconnect.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "出勤中の位置情報共有に使用します",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "出勤中の位置情報共有に使用します",
+        "NSCameraUsageDescription": "プロフィール写真や投稿の撮影に使用します",
+        "NSPhotoLibraryUsageDescription": "プロフィール写真や投稿の選択に使用します",
+        "NSMicrophoneUsageDescription": "動画投稿の録音に使用します"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0A0A0F"
+      },
+      "package": "com.yoruconnect.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#C9A84C"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "出勤中の位置情報共有に使用します"
+        }
+      ]
+    ]
+  }
+}
