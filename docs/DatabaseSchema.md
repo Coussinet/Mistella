@@ -1,4 +1,4 @@
-# データベース定義書 (Database Schema) : YoruConnect
+# データベース定義書 (Database Schema) : Mistella
 
 本ドキュメントは、Supabase (PostgreSQL) 上で構築するデータベースのテーブル設計です。プレミアムプラン（将来）や広告枠の実装を見据えた設計とします。
 

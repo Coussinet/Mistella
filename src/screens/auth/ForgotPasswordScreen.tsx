@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - パスワードリセット画面
+// Mistella - パスワードリセット画面
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
@@ -65,7 +65,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
         email.trim(),
         {
           // リダイレクト先（アプリのディープリンクに合わせて変更してください）
-          redirectTo: 'yoruconnect://reset-password',
+          redirectTo: 'mistella://reset-password',
         },
       );
 
@@ -102,7 +102,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
             >
               <MaterialIcons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <Text style={styles.appName}>YoruConnect</Text>
+            <Text style={styles.appName}>Mistella</Text>
             <View style={styles.backButtonPlaceholder} />
           </View>
 

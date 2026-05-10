@@ -1,14 +1,14 @@
-# AIを活用したアプリ開発手順書 (YoruConnect)
+# AIを活用したアプリ開発手順書 (Mistella)
 
-この手順書は、生成AIと対話しながら「YoruConnect」のコードを生成し、アプリを完成・公開させるためのステップバイステップのガイドです。
+この手順書は、生成AIと対話しながら「Mistella」のコードを生成し、アプリを完成・公開させるためのステップバイステップのガイドです。
 
 ## Phase 1: プロジェクトの初期化 (あなたが行う作業)
 
 1. **Expoプロジェクトの作成:** ターミナルで以下を実行します。
     
     ```
-    npx create-expo-app YoruConnect -t expo-template-blank-typescript
-    cd YoruConnect
+    npx create-expo-app Mistella -t expo-template-blank-typescript
+    cd Mistella
     ```
     
 2. **Supabaseプロジェクトの作成:** Supabase公式サイトでプロジェクトを作成します。**※「Free Plan」を選択してください。**

@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - Auth Zustand Store
+// Mistella - Auth Zustand Store
 // ============================================================
 
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';

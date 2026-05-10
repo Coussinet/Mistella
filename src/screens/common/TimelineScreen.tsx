@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - TimelineScreen（共通）
+// Mistella - TimelineScreen（共通）
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';

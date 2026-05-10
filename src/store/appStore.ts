@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - App-level Zustand Store
+// Mistella - App-level Zustand Store
 // ============================================================
 
 import { create } from 'zustand';

@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - MatchesScreen（共通）
+// Mistella - MatchesScreen（共通）
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';

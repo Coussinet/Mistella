@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - ログイン画面
+// Mistella - ログイン画面
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
@@ -116,7 +116,7 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.logoCircle}>
               <MaterialIcons name="nights-stay" size={40} color={COLORS.gold} />
             </View>
-            <Text style={styles.appName}>YoruConnect</Text>
+            <Text style={styles.appName}>Mistella</Text>
             <Text style={styles.tagline}>夜の出会いをもっと特別に</Text>
           </View>
 

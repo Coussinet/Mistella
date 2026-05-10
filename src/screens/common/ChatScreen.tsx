@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - ChatScreen（共通）
+// Mistella - ChatScreen（共通）
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';

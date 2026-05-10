@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - ProfileScreen（共通）
+// Mistella - ProfileScreen（共通）
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';

@@ -1,4 +1,4 @@
-# 開発進捗ドキュメント：YoruConnect
+# 開発進捗ドキュメント：Mistella
 
 > **最終更新日**: 2026-05-11  
 > **担当**: y.araya@crea-lp.com  
@@ -64,7 +64,7 @@
 ## 2. ファイル構成
 
 ```
-YoruConnect/
+Mistella/
 ├── App.tsx                          # エントリーポイント（セッション管理・プロフィール自動取得）
 ├── app.json                         # Expo設定
 ├── package.json                     # 依存パッケージ

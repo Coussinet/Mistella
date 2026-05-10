@@ -1,4 +1,4 @@
-# YoruConnect (ヨルコネ)
+# Mistella (ミステラ)
 
 夜職向けマッチングSNSアプリ。ガールズバー・コンカフェのキャスト（女性）と顧客（男性）をつなぐプラットフォーム。
 
@@ -16,7 +16,7 @@
 ### 1. 依存パッケージのインストール
 
 ```bash
-cd YoruConnect
+cd Mistella
 npm install
 ```
 

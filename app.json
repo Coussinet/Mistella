@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "YoruConnect",
-    "slug": "yoruconnect",
+    "name": "Mistella",
+    "slug": "mistella",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "yoruconnect",
+    "scheme": "mistella",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yoruconnect.app",
+      "bundleIdentifier": "com.mistella.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "出勤中の位置情報共有に使用します",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "出勤中の位置情報共有に使用します",
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
       },
-      "package": "com.yoruconnect.app",
+      "package": "com.mistella.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

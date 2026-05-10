@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - 新規登録画面
+// Mistella - 新規登録画面
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
@@ -188,7 +188,7 @@ export default function RegisterScreen({ navigation }: Props) {
             >
               <MaterialIcons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <Text style={styles.appName}>YoruConnect</Text>
+            <Text style={styles.appName}>Mistella</Text>
             <View style={styles.backButtonPlaceholder} />
           </View>
 

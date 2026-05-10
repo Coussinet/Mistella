@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - Auth Service
+// Mistella - Auth Service
 // ============================================================
 
 import { supabase } from '../lib/supabase';

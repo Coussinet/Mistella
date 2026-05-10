@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - Message Service
+// Mistella - Message Service
 // ============================================================
 
 import { supabase } from '../lib/supabase';

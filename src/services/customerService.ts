@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - Customer Service（顧客専用機能）
+// Mistella - Customer Service（顧客専用機能）
 // ============================================================
 
 import { supabase } from '../lib/supabase';

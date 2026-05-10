@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - FootprintsScreen（共通）
+// Mistella - FootprintsScreen（共通）
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';

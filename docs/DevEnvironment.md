@@ -1,4 +1,4 @@
-# 開発環境セットアップガイド：YoruConnect
+# 開発環境セットアップガイド：Mistella
 
 > 別PCで開発を継続するための手順書。  
 > 元PC（Mac）の環境をそのまま再現するために必要な設定をまとめています。
@@ -46,7 +46,7 @@ sudo xcodebuild -license accept
 
 ```bash
 # リポジトリをクローン（またはコピー）
-cd YoruConnect
+cd Mistella
 
 # パッケージインストール（必ず npm install を実行）
 npm install
@@ -213,7 +213,7 @@ export PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platf
 
 プロンプト例:
 ```
-「以下のドキュメントを読んで、YoruConnectの開発状況を把握してください。
+「以下のドキュメントを読んで、Mistellaの開発状況を把握してください。
 その上で[やりたいこと]を実装してください。」
 → 上記5つのドキュメントをすべて貼り付ける
 ```

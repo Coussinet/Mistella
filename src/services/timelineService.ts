@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - Timeline Service
+// Mistella - Timeline Service
 // ============================================================
 
 import { supabase } from '../lib/supabase';

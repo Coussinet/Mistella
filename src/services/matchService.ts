@@ -1,5 +1,5 @@
 // ============================================================
-// YoruConnect - Match Service
+// Mistella - Match Service
 // ============================================================
 
 import { supabase } from '../lib/supabase';
