@@ -66,6 +66,7 @@ export default function App() {
           // プロフィール未作成の場合
         }
       }
+    }).finally(() => {
       setLoading(false);
     });
 

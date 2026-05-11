@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -17,7 +18,10 @@ export async function registerPushToken(userId: string): Promise<void> {
 
 	if (finalStatus !== 'granted') return;
 
-	const tokenData = await Notifications.getExpoPushTokenAsync();
+	const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+	const tokenData = await Notifications.getExpoPushTokenAsync(
+		projectId ? { projectId } : undefined,
+	);
 	const token = tokenData.data;
 	const platform = Platform.OS === 'ios' ? 'ios' : 'android';
 
@@ -30,14 +34,16 @@ export async function registerPushToken(userId: string): Promise<void> {
 
 export async function getNotificationSettings(
 	userId: string,
-): Promise<PushToken | null> {
+): Promise<NotificationSettingsKeys | null> {
 	const { data, error } = await supabase
 		.from('push_tokens')
-		.select('*')
+		.select(
+			'notification_messages, notification_matches, notification_likes, notification_tonight_requests, notification_tonight_responses',
+		)
 		.eq('user_id', userId)
 		.maybeSingle();
 	if (error) throw error;
-	return data as PushToken | null;
+	return data as NotificationSettingsKeys | null;
 }
 
 export async function updateNotificationSettings(
@@ -51,12 +57,7 @@ export async function updateNotificationSettings(
 	if (error) throw error;
 }
 
-type NotificationKey =
-	| 'notification_messages'
-	| 'notification_matches'
-	| 'notification_likes'
-	| 'notification_tonight_requests'
-	| 'notification_tonight_responses';
+type NotificationKey = keyof NotificationSettingsKeys;
 
 export async function sendPushNotification(params: {
 	recipientUserId: string;

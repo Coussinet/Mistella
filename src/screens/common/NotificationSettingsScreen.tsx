@@ -14,7 +14,7 @@ import {
 	updateNotificationSettings,
 } from '../../services/notificationService';
 import { useAuthStore } from '../../store/authStore';
-import type { NotificationSettingsKeys, PushToken } from '../../types';
+import type { NotificationSettingsKeys } from '../../types';
 
 type SettingItem = {
 	key: keyof NotificationSettingsKeys;
@@ -32,7 +32,7 @@ const SETTINGS: SettingItem[] = [
 
 export default function NotificationSettingsScreen() {
 	const { user } = useAuthStore();
-	const [settings, setSettings] = useState<PushToken | null>(null);
+	const [settings, setSettings] = useState<NotificationSettingsKeys | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [updating, setUpdating] = useState<keyof NotificationSettingsKeys | null>(null);
 
