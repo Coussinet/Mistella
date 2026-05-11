@@ -8,6 +8,12 @@ interface AnnouncementPayload {
   target_user_id?: string
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
@@ -53,7 +59,7 @@ Deno.serve(async (req) => {
         .update({ sent_at: new Date().toISOString() })
         .eq('id', payload.announcement_id)
       return new Response(JSON.stringify({ sent: 0 }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -75,12 +81,12 @@ Deno.serve(async (req) => {
       .eq('id', payload.announcement_id)
 
     return new Response(JSON.stringify({ sent: messages.length }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

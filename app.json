@@ -20,7 +20,8 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "出勤中の位置情報共有に使用します",
         "NSCameraUsageDescription": "プロフィール写真や投稿の撮影に使用します",
         "NSPhotoLibraryUsageDescription": "プロフィール写真や投稿の選択に使用します",
-        "NSMicrophoneUsageDescription": "動画投稿の録音に使用します"
+        "NSMicrophoneUsageDescription": "動画投稿の録音に使用します",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -37,7 +38,9 @@
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO",
         "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
+        "RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -58,6 +61,11 @@
           "locationAlwaysAndWhenInUsePermission": "出勤中の位置情報共有に使用します"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b3e3e7ed-5fb3-494d-bed6-219d808cef6c"
+      }
+    }
   }
 }

@@ -8,14 +8,15 @@ interface NotificationPayload {
 	data?: Record<string, string>;
 }
 
+const corsHeaders = {
+	'Access-Control-Allow-Origin': '*',
+	'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+	'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+}
+
 Deno.serve(async (req) => {
 	if (req.method === 'OPTIONS') {
-		return new Response('ok', {
-			headers: {
-				'Access-Control-Allow-Origin': '*',
-				'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-			},
-		})
+		return new Response('ok', { headers: corsHeaders })
 	}
 
 	try {
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
 
 		if (!tokens || tokens.length === 0) {
 			return new Response(JSON.stringify({ sent: 0 }), {
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', ...corsHeaders },
 			})
 		}
 
@@ -54,12 +55,12 @@ Deno.serve(async (req) => {
 
 		const result = await expoRes.json()
 		return new Response(JSON.stringify({ sent: messages.length, result }), {
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', ...corsHeaders },
 		})
 	} catch (err) {
 		return new Response(JSON.stringify({ error: String(err) }), {
 			status: 500,
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', ...corsHeaders },
 		})
 	}
 })
