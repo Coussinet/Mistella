@@ -24,12 +24,15 @@ CREATE TABLE IF NOT EXISTS public.users_admin (
 	created_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE public.users_admin ENABLE ROW LEVEL SECURITY;
+-- ポリシーなし = 一般ユーザーからの全操作を拒否。管理Webはservice_role keyでバイパス。
+
 -- プッシュ通知トークン
 CREATE TABLE IF NOT EXISTS public.push_tokens (
 	id                              UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
 	user_id                         UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 	token                           TEXT        NOT NULL UNIQUE,
-	platform                        TEXT        CHECK (platform IN ('ios', 'android')),
+	platform                        TEXT        NOT NULL CHECK (platform IN ('ios', 'android')),
 	notification_messages           BOOLEAN     DEFAULT true,
 	notification_matches            BOOLEAN     DEFAULT true,
 	notification_likes              BOOLEAN     DEFAULT true,
@@ -45,7 +48,8 @@ CREATE TABLE IF NOT EXISTS public.blocks (
 	blocker_id UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 	blocked_id UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 	created_at TIMESTAMPTZ DEFAULT now(),
-	UNIQUE (blocker_id, blocked_id)
+	UNIQUE (blocker_id, blocked_id),
+	CONSTRAINT blocks_no_self_block CHECK (blocker_id != blocked_id)
 );
 
 -- 通報
@@ -58,7 +62,8 @@ CREATE TABLE IF NOT EXISTS public.reports (
 	status           TEXT        DEFAULT 'pending' CHECK (status IN ('pending','reviewed','dismissed')),
 	created_at       TIMESTAMPTZ DEFAULT now(),
 	reviewed_at      TIMESTAMPTZ,
-	reviewed_by      UUID        REFERENCES public.users_admin(id)
+	reviewed_by      UUID        REFERENCES public.users_admin(id) ON DELETE SET NULL,
+	CONSTRAINT reports_no_self_report CHECK (reporter_id != reported_user_id)
 );
 
 -- お知らせ通知
@@ -82,6 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_blocks_blocker_id     ON public.blocks (blocker_i
 CREATE INDEX IF NOT EXISTS idx_blocks_blocked_id     ON public.blocks (blocked_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status        ON public.reports (status);
 CREATE INDEX IF NOT EXISTS idx_reports_reported_user ON public.reports (reported_user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_reporter_id ON public.reports (reporter_id);
 
 -- ============================================================
 -- push_tokens の updated_at 自動更新トリガー
@@ -96,6 +102,10 @@ CREATE TRIGGER trg_push_tokens_updated_at
 -- RLS: ブロック・管理者ブロック対応
 -- ============================================================
 
+-- schema.sql の既存ポリシーを置き換える
+DROP POLICY IF EXISTS "users_select_all" ON public.users;
+DROP POLICY IF EXISTS "users_update_own" ON public.users;
+
 -- users: ブロックされたユーザーを非表示
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
@@ -103,17 +113,20 @@ DROP POLICY IF EXISTS users_select_policy ON public.users;
 CREATE POLICY users_select_policy ON public.users
 	FOR SELECT USING (
 		is_blocked = false
-		AND id NOT IN (
-			SELECT blocked_id FROM public.blocks WHERE blocker_id = auth.uid()
+		AND NOT EXISTS (
+			SELECT 1 FROM public.blocks
+			WHERE blocker_id = auth.uid() AND blocked_id = id
 		)
-		AND id NOT IN (
-			SELECT blocker_id FROM public.blocks WHERE blocked_id = auth.uid()
+		AND NOT EXISTS (
+			SELECT 1 FROM public.blocks
+			WHERE blocked_id = auth.uid() AND blocker_id = id
 		)
 	);
 
 DROP POLICY IF EXISTS users_update_own_policy ON public.users;
 CREATE POLICY users_update_own_policy ON public.users
-	FOR UPDATE USING (id = auth.uid());
+	FOR UPDATE USING (id = auth.uid())
+	WITH CHECK (id = auth.uid());
 
 -- push_tokens: 本人のみ読み書き可
 ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
@@ -129,6 +142,10 @@ CREATE POLICY push_tokens_insert_policy ON public.push_tokens
 DROP POLICY IF EXISTS push_tokens_update_policy ON public.push_tokens;
 CREATE POLICY push_tokens_update_policy ON public.push_tokens
 	FOR UPDATE USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS push_tokens_delete_policy ON public.push_tokens;
+CREATE POLICY push_tokens_delete_policy ON public.push_tokens
+	FOR DELETE USING (user_id = auth.uid());
 
 -- blocks: 本人のみ読み書き可
 ALTER TABLE public.blocks ENABLE ROW LEVEL SECURITY;
@@ -161,4 +178,10 @@ ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS announcements_select_policy ON public.announcements;
 CREATE POLICY announcements_select_policy ON public.announcements
-	FOR SELECT USING (auth.uid() IS NOT NULL);
+	FOR SELECT USING (
+		auth.uid() IS NOT NULL
+		AND (
+			target_type IN ('all_male', 'all_female')
+			OR target_user_id = auth.uid()
+		)
+	);
