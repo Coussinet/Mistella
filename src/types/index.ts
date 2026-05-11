@@ -202,6 +202,7 @@ export type CastStackParamList = {
   CustomerNoteDetail: { noteId: string; customerId: string };
   ChatRoom: { matchId: string; partnerUser: User };
   UserProfile: { userId: string };
+  NotificationSettings: undefined;
 };
 
 /** 顧客用スタックナビゲーター（タブを内包） */
@@ -211,6 +212,7 @@ export type CustomerStackParamList = {
   CastProfile: { userId: string };
   ChatRoom: { matchId: string; partnerUser: User };
   SendTonightRequest: { targetCastId?: string };
+  NotificationSettings: undefined;
 };
 
 /** ルートナビゲーター */
@@ -219,3 +221,51 @@ export type RootStackParamList = {
   CastApp: undefined;
   CustomerApp: undefined;
 };
+
+// -----------------------------------------------------------
+// Push Notification Types
+// -----------------------------------------------------------
+
+export type ReportReason = 'spam' | 'inappropriate_content' | 'harassment' | 'other';
+
+export interface PushToken {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: 'ios' | 'android';
+  notification_messages: boolean;
+  notification_matches: boolean;
+  notification_likes: boolean;
+  notification_tonight_requests: boolean;
+  notification_tonight_responses: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NotificationSettingsKeys = Pick<
+  PushToken,
+  | 'notification_messages'
+  | 'notification_matches'
+  | 'notification_likes'
+  | 'notification_tonight_requests'
+  | 'notification_tonight_responses'
+>;
+
+export interface Block {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+}
+
+export interface Report {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reason: ReportReason;
+  detail: string | null;
+  status: 'pending' | 'reviewed' | 'dismissed';
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+}
