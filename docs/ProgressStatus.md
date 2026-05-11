@@ -2,7 +2,7 @@
 
 > **最終更新日**: 2026-05-11  
 > **担当**: y.araya@crea-lp.com  
-> **ステータス**: フロントエンド全機能実装完了 / Supabaseセットアップ待ち
+> **ステータス**: フロントエンド全機能実装完了・管理Webアプリ実装完了 / **Supabaseセットアップ・Edge Functionデプロイ待ち**
 
 ---
 
@@ -59,6 +59,35 @@
 - マップ表示（出勤中・位置情報ONのキャストをピン表示）
 - 「今夜行ける？」アピール送信（お気に入り指定 / 特定キャスト / 現在地周辺一括）
 
+### 1.9 プッシュ通知 ✅（コード実装済み / Supabaseデプロイ待ち）
+- expo-notifications による端末トークン取得・保存（`push_tokens` テーブル）
+- 通知設定画面（5種類のトグル: メッセージ / マッチング / いいね / 今夜リクエスト / 今夜返答）
+- ProfileScreen → 「通知設定」メニュー経由でアクセス
+- `notificationService.ts` でEdge Function `send-push-notification` を呼び出し
+- 以下のイベントで自動通知:
+  - メッセージ受信（`messageService.sendMessage`）
+  - いいね受信（`matchService.sendLike`）
+  - マッチング成立（`matchService.sendLike`）
+  - 今夜リクエスト受信（`customerService.sendTonightRequest`）
+  - 今夜リクエスト返答（`castService.updateTonightRequestStatus`）
+
+### 1.10 ブロック・通報機能 ✅
+- `blockService.ts`: ブロック追加・解除・確認
+- `reportUser()`: 通報（理由4種: spam / inappropriate_content / harassment / other）
+- `UserProfileScreen` ヘッダー右上の「…」ボタンからブロック・通報が可能
+- ブロック後は自動で前画面に戻る
+- 通報はモーダルで理由+補足コメント入力
+
+### 1.11 管理Webアプリ（Mistella-admin） ✅（コード実装済み / Supabase設定・デプロイ待ち）
+- Next.js 14 App Router + TypeScript + Tailwind CSS（`Mistella-admin/` ディレクトリ）
+- `/login`: Supabase Auth + `users_admin` テーブルによる2段階管理者認証
+- `/dashboard`: サマリー（ユーザー数・未対応通報数）
+- `/dashboard/reports`: 通報一覧（ステータスフィルタ）・詳細・対応済み/却下処理
+- `/dashboard/users/male`: 男性ユーザー一覧・プレミアム/ブロック編集
+- `/dashboard/users/female`: 女性ユーザー一覧・プレミアム/ブロック編集
+- `/dashboard/announcements`: お知らせ一覧・新規作成（一斉/個別プッシュ通知送信）
+- `/dashboard/shops`: 店舗一覧・Sponsoredバッジ・料金情報編集
+
 ---
 
 ## 2. ファイル構成
@@ -75,29 +104,69 @@ Mistella/
 ├── assets/
 │   └── images/                      # アプリアイコン・スプラッシュ（作成済み）
 ├── supabase/
-│   └── schema.sql                   # DB定義・RLS・トリガー・pg_cron（未実行）
+│   ├── schema.sql                   # 初回DB定義・RLS・トリガー・pg_cron（未実行）
+│   ├── migrations/
+│   │   └── 001_push_block_report_admin.sql  # ★未実行: push_tokens/blocks/reports/announcements/users_admin
+│   └── functions/
+│       ├── send-push-notification/
+│       │   └── index.ts             # ★未デプロイ: 個別プッシュ通知 Edge Function
+│       └── send-announcement/
+│           └── index.ts             # ★未デプロイ: 一斉/個別お知らせ Edge Function
+├── Mistella-admin/                  # ★管理Webアプリ（Next.js 14）
+│   ├── .env.local                   # ← Supabase URL/Key を設定する（要設定）
+│   ├── package.json
+│   ├── middleware.ts                # /dashboard/* 認証ガード
+│   ├── lib/supabase/
+│   │   ├── client.ts               # ブラウザ用クライアント
+│   │   ├── server.ts               # サーバー用クライアント（cookies）
+│   │   └── admin.ts                # サービスロールキー使用（Server Actionのみ）
+│   ├── types/index.ts              # 管理画面の型定義
+│   ├── components/
+│   │   ├── Sidebar.tsx             # サイドナビ（ログアウトボタン付き）
+│   │   ├── UserListPage.tsx        # ユーザー一覧共通コンポーネント
+│   │   └── UserEditPage.tsx        # ユーザー編集共通コンポーネント（Server Action）
+│   └── app/
+│       ├── layout.tsx              # ダークテーマ・日本語
+│       ├── login/page.tsx          # ログイン（2段階認証: Supabase Auth + users_admin）
+│       └── dashboard/
+│           ├── layout.tsx          # Sidebar + メインコンテンツ
+│           ├── page.tsx            # サマリー
+│           ├── reports/
+│           │   ├── page.tsx        # 通報一覧（ステータスフィルタ）
+│           │   └── [id]/page.tsx   # 通報詳細・対応
+│           ├── users/
+│           │   ├── male/page.tsx + [id]/page.tsx   # 男性ユーザー管理
+│           │   └── female/page.tsx + [id]/page.tsx # 女性ユーザー管理
+│           ├── announcements/
+│           │   ├── page.tsx        # お知らせ一覧
+│           │   └── new/page.tsx    # お知らせ作成（Edge Function呼び出し）
+│           └── shops/
+│               ├── page.tsx        # 店舗一覧
+│               └── [userId]/page.tsx # 店舗編集（Sponsoredバッジ・料金）
 └── src/
     ├── constants/
     │   └── colors.ts                # デザインカラー定数
     ├── lib/
     │   └── supabase.ts              # Supabaseクライアント（SecureStore永続化）
     ├── types/
-    │   └── index.ts                 # 全TypeScript型定義
+    │   └── index.ts                 # 全TypeScript型定義（ReportReason等を含む）
     ├── store/
     │   ├── authStore.ts             # 認証状態（Zustand）
     │   └── appStore.ts              # 未読数など（Zustand）
     ├── services/
     │   ├── authService.ts           # 認証・プロフィールAPI
     │   ├── timelineService.ts       # タイムラインAPI
-    │   ├── matchService.ts          # いいね・マッチ・キャスト検索API
-    │   ├── messageService.ts        # メッセージAPI（Realtime購読含む）
-    │   ├── castService.ts           # キャスト専用API（出勤・CRM・今夜リクエスト）
-    │   └── customerService.ts       # 顧客専用API（お気に入り・足跡・今夜送信）
+    │   ├── matchService.ts          # いいね・マッチ・キャスト検索API（通知送信含む）
+    │   ├── messageService.ts        # メッセージAPI（Realtime購読含む・通知送信含む）
+    │   ├── castService.ts           # キャスト専用API（出勤・CRM・今夜リクエスト・通知含む）
+    │   ├── customerService.ts       # 顧客専用API（お気に入り・足跡・今夜送信・通知含む）
+    │   ├── notificationService.ts   # プッシュ通知Edge Function呼び出し・トークン登録
+    │   └── blockService.ts          # ブロック追加・解除・確認・通報
     ├── navigation/
     │   ├── AppNavigator.tsx         # ルートナビ（認証状態・role分岐）
     │   ├── AuthNavigator.tsx        # 認証フロー
-    │   ├── CastTabNavigator.tsx     # キャスト用ボトムタブ（全実画面接続済）
-    │   └── CustomerTabNavigator.tsx # 顧客用ボトムタブ（全実画面接続済）
+    │   ├── CastTabNavigator.tsx     # キャスト用ボトムタブ（NotificationSettings接続済）
+    │   └── CustomerTabNavigator.tsx # 顧客用ボトムタブ（NotificationSettings接続済）
     ├── screens/
     │   ├── auth/
     │   │   ├── LoginScreen.tsx
@@ -105,13 +174,14 @@ Mistella/
     │   │   └── ForgotPasswordScreen.tsx
     │   ├── common/
     │   │   ├── TimelineScreen.tsx
-    │   │   ├── ProfileScreen.tsx
+    │   │   ├── ProfileScreen.tsx    # 通知設定メニュー追加済み
     │   │   ├── EditProfileScreen.tsx
     │   │   ├── MatchesScreen.tsx
     │   │   ├── ChatScreen.tsx
     │   │   ├── FavoritesScreen.tsx
     │   │   ├── FootprintsScreen.tsx
-    │   │   └── UserProfileScreen.tsx
+    │   │   ├── UserProfileScreen.tsx # ブロック・通報UI追加済み
+    │   │   └── NotificationSettingsScreen.tsx  # ★通知設定画面
     │   ├── cast/
     │   │   ├── WorkingStatusScreen.tsx
     │   │   ├── ShopInfoScreen.tsx
@@ -144,41 +214,93 @@ Mistella/
 
 ---
 
-## 3. 残作業（次のPCで対応が必要な項目）
+## 3. 残作業（次のセッションで対応が必要な項目）
 
-### 3.1 Supabaseセットアップ ⚠️ 最優先
-以下を完了しないとアプリが動作しない。
+### 3.1 DBマイグレーション ⚠️ 最優先（未実行）
+アプリの通知・ブロック・通報・管理画面機能が動作しない。
 
-1. **`.env`にURL/Keyを記入**  
+1. **`supabase/migrations/001_push_block_report_admin.sql` を実行**  
+   Supabaseダッシュボード → SQL Editor → ファイルの全内容を貼り付けて Run  
+   作成されるテーブル: `push_tokens`, `blocks`, `reports`, `announcements`, `users_admin`  
+   追加カラム: `users.is_blocked`
+
+2. **（初回セットアップが未完了の場合）`supabase/schema.sql` も先に実行**  
+   Supabase Storage バケット `avatars`, `media` も Public で作成する  
+   pg_cron拡張を有効化: Supabase → Database → Extensions → `pg_cron` Enable
+
+3. **モバイルアプリの `.env` に URL/Key を記入**  
    ```
    EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
    ```
 
-2. **`supabase/schema.sql`をSQLエディタで実行**  
-   Supabaseダッシュボード → SQL Editor → 内容を貼り付けて実行
+### 3.2 管理Webアプリのセットアップ ⚠️ 最優先
 
-3. **Supabase Storage バケットを作成（Public）**  
-   - `avatars`（プロフィール画像）  
-   - `media`（タイムライン投稿の画像・動画）
+1. **`Mistella-admin/.env.local` に値を記入**  
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   SUPABASE_SERVICE_ROLE_KEY=eyJ...  ← Supabase → Settings → Data API → service_role
+   ```
+   > ⚠️ `SUPABASE_SERVICE_ROLE_KEY` は絶対にクライアント側に露出させないこと。Server Action内のみで使用。
 
-4. **pg_cron拡張を有効化**  
-   Supabase → Database → Extensions → `pg_cron` を Enable
+2. **管理者アカウントの作成**  
+   - Supabase Dashboard → Authentication → Users → 「Add user」でメール/PW登録  
+   - 作成されたユーザーのUUIDを `users_admin` テーブルに INSERT:
+   ```sql
+   INSERT INTO public.users_admin (id, email, name)
+   VALUES ('<auth.users の UUID>', 'admin@example.com', '管理者名');
+   ```
 
-### 3.2 動作確認が必要な画面
-| 画面 | 確認内容 |
+3. **管理Webアプリの起動確認**  
+   ```bash
+   cd Mistella-admin
+   npm install
+   npm run dev
+   # → http://localhost:3000/login でログイン画面が表示されること
+   ```
+
+### 3.3 Supabase Edge Functionのデプロイ ⚠️
+
+```bash
+# Supabase CLIのインストール（未インストールの場合）
+brew install supabase/tap/supabase
+
+# ログイン
+supabase login
+
+# プロジェクトリンク（プロジェクトのREF IDはDashboard → Settings → General で確認）
+supabase link --project-ref <YOUR_PROJECT_REF>
+
+# Edge Functionをデプロイ
+supabase functions deploy send-push-notification
+supabase functions deploy send-announcement
+```
+
+> デプロイ後、Supabase Dashboard → Edge Functions でステータスが「Active」になることを確認。
+
+### 3.4 動作確認チェックリスト
+
+| 機能 | 確認内容 |
 |---|---|
-| LoginScreen | Supabase Auth接続確認 |
-| RegisterScreen | usersテーブルへのinsert確認 |
-| TimelineScreen | Realtime購読の動作確認 |
-| ChatScreen | Realtimeメッセージ受信確認 |
-| MapScreen | 位置情報取得・マップ表示確認 |
-| CastSearchScreen | `is_sponsored`優先表示確認 |
+| ログイン/登録 | Supabase Auth接続確認 |
+| タイムライン | Realtime購読の動作確認 |
+| チャット | Realtimeメッセージ受信確認 |
+| マップ | 位置情報取得・ピン表示確認 |
+| キャスト検索 | `is_sponsored`優先表示確認 |
+| プッシュ通知 | 実機でトークン取得 → `push_tokens`テーブルにレコード作成確認（iOSシミュレーター不可）|
+| 通知設定 | ProfileScreen → 「通知設定」遷移 → トグル切替がDBに反映 |
+| ブロック | 他ユーザープロフィール「…」→「ブロックする」→ `blocks`テーブル確認 |
+| 通報 | 「通報する」→ 理由選択 → `reports`テーブル確認 |
+| 管理画面ログイン | `/login` で `users_admin` 登録済みアカウントでログイン |
+| 管理画面通報 | 通報一覧に表示・「対応済み」ボタンでステータス変更 |
+| 管理画面ユーザー | is_premium / is_blocked の切替が保存 |
+| お知らせ通知 | 「送信する」→ Edge Functionが呼ばれプッシュ通知が届く |
+| 店舗管理 | `is_sponsored` 変更後にキャスト検索画面でSponsored表示が変わる |
 
-### 3.3 将来実装予定（設計は対応済み）
-- **男性向けプレミアムプラン**（`is_premium`フラグはDB・型定義に存在）
-- プッシュ通知（expo-notificationsインストール済み、初期化のみ）
-- スパム・悪質ユーザーのブロック・通報
+### 3.5 将来実装予定（設計・フラグは対応済み）
+- **男性向けプレミアムプラン**（`is_premium`フラグはDB・型定義・管理画面に存在。課金フロー未実装）
+- **今夜行ける？のマップ一括送信の位置情報精度向上**（現在は ±0.01度オフセット）
 
 ---
 

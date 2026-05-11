@@ -102,6 +102,51 @@ npm start
 
 ---
 
+---
+
+## 2.5 管理Webアプリ（Mistella-admin）のセットアップ
+
+### 技術スタック
+- Next.js 14 App Router（`Mistella-admin/` ディレクトリ）
+- TypeScript + Tailwind CSS
+- @supabase/ssr（サーバーサイドのSupabase接続）
+
+### セットアップ手順
+
+```bash
+cd Mistella-admin
+npm install
+```
+
+`.env.local` に値を記入（コミット対象外 — `.gitignore` に登録済み）:
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+```bash
+npm run dev
+# → http://localhost:3000
+```
+
+### 認証の仕組み
+1. `/login` でメール/パスワードを入力
+2. Supabase Auth で認証後、`public.users_admin` テーブルに該当UUIDがあるかチェック
+3. なければサインアウトしてエラー表示（一般ユーザーのログインを防ぐ）
+4. `middleware.ts` が `/dashboard/*` へのアクセスをガード
+
+### Supabaseクライアントの使い分け
+| ファイル | 用途 | キー |
+|---|---|---|
+| `lib/supabase/client.ts` | Client Component（ブラウザ） | anon key |
+| `lib/supabase/server.ts` | Server Component / Route Handler | anon key + cookies |
+| `lib/supabase/admin.ts` | Server Action のみ | service_role key（⚠️ 秘匿） |
+
+> `admin.ts` は Server Action 内でのみ使用すること。クライアント側に絶対に露出させない。
+
+---
+
 ## 3. package.json の依存パッケージ（2026-05-11時点）
 
 ```json
@@ -208,7 +253,7 @@ export PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platf
 1. `docs/RFP.md` — 要件定義書（アプリの全体像）
 2. `docs/TechSpecs.md` — 技術仕様書
 3. `docs/DatabaseSchema.md` — DB設計書
-4. `docs/ProgressStatus.md` — **現在の開発進捗**（このファイルと対になっている）
+4. `docs/ProgressStatus.md` — **現在の開発進捗・残作業リスト**（最重要）
 5. `docs/DevEnvironment.md` — このファイル
 
 プロンプト例:
@@ -217,6 +262,9 @@ export PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platf
 その上で[やりたいこと]を実装してください。」
 → 上記5つのドキュメントをすべて貼り付ける
 ```
+
+> **引き継ぎのポイント**: `docs/ProgressStatus.md` の「3. 残作業」セクションに、
+> 次にやるべきことが優先順位付きで記載されています。まずそこを確認してください。
 
 ### コーディング規約
 - TypeScript strict mode（`strict: true`）
