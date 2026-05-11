@@ -3,7 +3,13 @@
 // ============================================================
 
 import { supabase } from '../lib/supabase';
-import type { CustomerNote, TonightRequest, WorkStatus } from '../types';
+import type {
+  BroadcastReactionType,
+  BroadcastTonightRequest,
+  CustomerNote,
+  TonightRequest,
+  WorkStatus,
+} from '../types';
 import { sendPushNotification } from './notificationService';
 
 // -----------------------------------------------------------
@@ -117,6 +123,86 @@ export async function updateTonightRequestStatus(
       recipientUserId: request.customer_id,
       title: '今夜行ける？の返答',
       body: `リクエストが${statusLabel}されました`,
+      notificationKey: 'notification_tonight_responses',
+    });
+  }
+}
+
+// -----------------------------------------------------------
+// 全体向けブロードキャスト投稿一覧取得（キャスト用）
+// -----------------------------------------------------------
+
+/**
+ * 全キャスト向けの今夜行ける？投稿を取得する。
+ * 自分の反応情報も合わせて返す。
+ */
+export async function getBroadcastTonightRequests(
+  castId: string,
+): Promise<BroadcastTonightRequest[]> {
+  const now = new Date().toISOString();
+
+  const { data: posts, error } = await supabase
+    .from('tonight_requests')
+    .select('*, customer:users!tonight_requests_customer_id_fkey(*)')
+    .is('target_cast_id', null)
+    .gt('expires_at', now)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  if (!posts || posts.length === 0) return [];
+
+  const postIds = posts.map((p) => p.id);
+  const { data: reactions } = await supabase
+    .from('tonight_broadcast_reactions')
+    .select('*')
+    .eq('cast_id', castId)
+    .in('request_id', postIds);
+
+  const reactionMap = new Map(
+    (reactions ?? []).map((r) => [r.request_id, r]),
+  );
+
+  return posts.map((p) => ({
+    ...p,
+    my_reaction: reactionMap.get(p.id) ?? null,
+  })) as BroadcastTonightRequest[];
+}
+
+// -----------------------------------------------------------
+// ブロードキャスト投稿への反応（キャスト用）
+// -----------------------------------------------------------
+
+/** 全体向け投稿に興味あり or メッセージで反応する。 */
+export async function reactToBroadcast(
+  requestId: string,
+  castId: string,
+  type: BroadcastReactionType,
+  message?: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('tonight_broadcast_reactions')
+    .upsert(
+      { request_id: requestId, cast_id: castId, type, message: message ?? null },
+      { onConflict: 'request_id,cast_id' },
+    );
+
+  if (error) throw error;
+
+  const { data: request } = await supabase
+    .from('tonight_requests')
+    .select('customer_id')
+    .eq('id', requestId)
+    .single();
+
+  if (request) {
+    const body =
+      type === 'interested'
+        ? 'キャストがあなたの投稿に興味を示しています'
+        : 'キャストからメッセージが届きました';
+    sendPushNotification({
+      recipientUserId: request.customer_id,
+      title: '今夜行ける！に反応がありました',
+      body,
       notificationKey: 'notification_tonight_responses',
     });
   }

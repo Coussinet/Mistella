@@ -40,6 +40,31 @@ export async function sendTonightRequest(
 }
 
 // -----------------------------------------------------------
+// 今夜行ける？全体向けブロードキャスト送信
+// -----------------------------------------------------------
+
+/**
+ * 全キャスト向けに今夜行ける？を投稿する。
+ * target_cast_id を NULL にすることでブロードキャスト扱いとなる。
+ */
+export async function sendBroadcastTonightRequest(
+  customerId: string,
+  message?: string,
+): Promise<void> {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  const { error } = await supabase.from('tonight_requests').insert({
+    customer_id: customerId,
+    target_cast_id: null,
+    message: message ?? null,
+    status: 'sent',
+    expires_at: expiresAt,
+  });
+
+  if (error) throw error;
+}
+
+// -----------------------------------------------------------
 // お気に入り追加
 // -----------------------------------------------------------
 

@@ -24,6 +24,7 @@ import { COLORS } from '../../constants/colors';
 import { supabase } from '../../lib/supabase';
 import {
   sendTonightRequest,
+  sendBroadcastTonightRequest,
   getFavorites,
 } from '../../services/customerService';
 import { useAuthStore } from '../../store/authStore';
@@ -39,7 +40,7 @@ import type {
 // 送信先モード
 // -----------------------------------------------------------
 
-type SendMode = 'favorites' | 'specific' | 'nearby';
+type SendMode = 'broadcast' | 'favorites' | 'specific' | 'nearby';
 
 // -----------------------------------------------------------
 // TonightSendScreen
@@ -54,7 +55,7 @@ export default function TonightSendScreen({ route }: Props) {
   const presetCastId = route.params?.targetCastId ?? null;
 
   const [mode, setMode] = useState<SendMode>(
-    presetCastId ? 'specific' : 'favorites',
+    presetCastId ? 'specific' : 'broadcast',
   );
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -173,6 +174,27 @@ export default function TonightSendScreen({ route }: Props) {
 
     let targets: string[] = [];
 
+    if (mode === 'broadcast') {
+      // ブロードキャスト: 特定キャストを選ばず全体に投稿
+      setIsSending(true);
+      try {
+        await sendBroadcastTonightRequest(profile.id, message || undefined);
+        setIsDone(true);
+        Animated.spring(checkScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 70,
+          friction: 6,
+        }).start();
+        setTimeout(() => navigation.goBack(), 1600);
+      } catch {
+        Alert.alert('送信に失敗しました', '時間をおいて再度お試しください。');
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
+
     if (mode === 'favorites') {
       targets = Array.from(selectedFavIds);
       if (targets.length === 0) {
@@ -267,7 +289,30 @@ export default function TonightSendScreen({ route }: Props) {
           {/* モード選択 */}
           <View style={styles.modeSection}>
             <Text style={styles.sectionLabel}>送信先を選択</Text>
+            {/* 1行目: 全体・お気に入り */}
             <View style={styles.modeButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  mode === 'broadcast' && styles.modeButtonActive,
+                ]}
+                onPress={() => setMode('broadcast')}
+              >
+                <MaterialIcons
+                  name="campaign"
+                  size={18}
+                  color={mode === 'broadcast' ? COLORS.background : COLORS.gold}
+                />
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    mode === 'broadcast' && styles.modeButtonTextActive,
+                  ]}
+                >
+                  全キャスト
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={[
                   styles.modeButton,
@@ -289,7 +334,9 @@ export default function TonightSendScreen({ route }: Props) {
                   お気に入り
                 </Text>
               </TouchableOpacity>
-
+            </View>
+            {/* 2行目: 特定・現在地 */}
+            <View style={[styles.modeButtons, { marginTop: 8 }]}>
               <TouchableOpacity
                 style={[
                   styles.modeButton,
@@ -335,6 +382,23 @@ export default function TonightSendScreen({ route }: Props) {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* --- 全キャスト向け --- */}
+          {mode === 'broadcast' ? (
+            <View style={styles.section}>
+              <View style={styles.broadcastInfo}>
+                <MaterialIcons name="campaign" size={28} color={COLORS.gold} />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.broadcastTitle}>全キャストに投稿</Text>
+                  <Text style={styles.broadcastDesc}>
+                    出勤中・未出勤を問わず全ての女性キャストに届きます。{'\n'}
+                    キャストはあなたの投稿を見て「興味あり」や{'\n'}
+                    メッセージで反応できます。
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
 
           {/* --- お気に入りリスト --- */}
           {mode === 'favorites' ? (
@@ -810,6 +874,23 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.4,
+  },
+
+  // 全キャスト向け
+  broadcastInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  broadcastTitle: {
+    color: COLORS.gold,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  broadcastDesc: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   // 完了画面

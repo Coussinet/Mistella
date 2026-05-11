@@ -41,6 +41,9 @@ function translateError(message: string): string {
   if (message.includes('Network request failed') || message.includes('fetch')) {
     return 'ネットワークエラーが発生しました。接続を確認してください。';
   }
+  if (message.includes('rate limit') || message.includes('too many requests')) {
+    return '短時間に何度も試行されました。しばらく時間をおいてから再度お試しください。';
+  }
   return 'エラーが発生しました。しばらくしてから再度お試しください。';
 }
 
@@ -86,13 +89,21 @@ export default function RegisterScreen({ navigation }: Props) {
     setIsLoading(true);
 
     try {
-      // 1. Supabase Auth でユーザー作成
+      // 1. Supabase Auth でユーザー作成（role・nickname をメタデータとして渡す）
+      //    DBトリガー on_auth_user_created が users / cast_profiles を自動作成する
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          data: {
+            role,
+            nickname: nickname.trim(),
+          },
+        },
       });
 
       if (authError) {
+        console.error('[Register] authError:', authError.message, authError);
         setError(translateError(authError.message));
         return;
       }
@@ -102,52 +113,12 @@ export default function RegisterScreen({ navigation }: Props) {
         return;
       }
 
-      const userId = authData.user.id;
-
-      // 2. users テーブルへプロフィール insert
-      const { error: profileError } = await supabase.from('users').insert({
-        id: userId,
-        role,
-        nickname: nickname.trim(),
-        avatar_url: null,
-        bio: null,
-        is_premium: false,
-      });
-
-      if (profileError) {
-        // ロールバック用: auth ユーザーは削除できないが、ログ出力
-        console.error('プロフィール作成エラー:', profileError.message);
-        setError('プロフィールの作成に失敗しました。サポートにお問い合わせください。');
-        return;
-      }
-
-      // 3. キャストの場合は cast_profiles に初期レコードを insert
-      if (role === 'cast') {
-        const { error: castProfileError } = await supabase.from('cast_profiles').insert({
-          user_id: userId,
-          shop_name: null,
-          shop_address: null,
-          price_info: null,
-          is_sponsored: false,
-          is_working: false,
-          work_status: 'off',
-          location_lat: null,
-          location_lng: null,
-          location_enabled: false,
-        });
-
-        if (castProfileError) {
-          console.error('キャストプロフィール作成エラー:', castProfileError.message);
-          // キャストプロフィール作成失敗は致命的ではないため続行
-        }
-      }
-
-      // 4. セッション設定（確認メール不要の場合は即座にセッション取得できる）
+      // 2. セッション設定（メール確認不要なら即座にログイン）
       if (authData.session) {
         setSession(authData.session);
         setUser(authData.user);
         setProfile({
-          id: userId,
+          id: authData.user.id,
           role: role!,
           nickname: nickname.trim(),
           avatar_url: null,
@@ -156,9 +127,7 @@ export default function RegisterScreen({ navigation }: Props) {
           created_at: new Date().toISOString(),
         });
       } else {
-        // メール確認が必要な場合
-        setError(null);
-        // ログイン画面へ戻り、確認メール送信を案内
+        // メール確認が必要な場合はログイン画面へ
         navigation.navigate('Login');
       }
     } catch (e) {

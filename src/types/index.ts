@@ -96,6 +96,22 @@ export interface TonightRequest {
   customer?: User;
 }
 
+export type BroadcastReactionType = 'interested' | 'message';
+
+export interface TonightBroadcastReaction {
+  id: string;
+  request_id: string;
+  cast_id: string;
+  type: BroadcastReactionType;
+  message: string | null;
+  created_at: string;
+}
+
+/** 全体向け今夜行ける投稿（キャスト自身の反応情報を含む） */
+export interface BroadcastTonightRequest extends TonightRequest {
+  my_reaction: TonightBroadcastReaction | null;
+}
+
 export interface CustomerNote {
   id: string;
   cast_id: string;

@@ -146,11 +146,7 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    if (profile?.role === 'cast') {
-      navigation.navigate('CastProfileEdit');
-    } else {
-      navigation.navigate('CustomerProfileEdit');
-    }
+    navigation.navigate('EditProfile');
   };
 
   if (loading) {
