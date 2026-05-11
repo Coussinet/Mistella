@@ -226,6 +226,16 @@ export default function ProfileScreen() {
             <Text style={styles.editButtonText}>プロフィールを編集</Text>
           </TouchableOpacity>
 
+          {/* 通知設定リンク */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('NotificationSettings' as never)}
+          >
+            <MaterialIcons name="notifications" size={22} color={COLORS.gold} />
+            <Text style={styles.menuItemText}>通知設定</Text>
+            <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
+
           {/* グリッドセクション見出し */}
           {timelines.length > 0 && (
             <View style={styles.gridHeader}>
@@ -439,5 +449,24 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontSize: 14,
     fontWeight: '600',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 12,
+  },
+  menuItemText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

@@ -20,6 +20,7 @@ import ShopInfoScreen from '../screens/cast/ShopInfoScreen';
 import TonightRequestsScreen from '../screens/cast/TonightRequestsScreen';
 import CRMScreen from '../screens/cast/CRMScreen';
 import CustomerNoteScreen from '../screens/cast/CustomerNoteScreen';
+import NotificationSettingsScreen from '../screens/common/NotificationSettingsScreen';
 
 const stackScreenOptions = {
   headerStyle: { backgroundColor: COLORS.surface },
@@ -82,6 +83,7 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="Footprints" component={FootprintsScreen} options={{ title: '足跡' }} />
       <ProfileStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
       <ProfileStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
+      <ProfileStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: '通知設定' }} />
     </ProfileStack.Navigator>
   );
 }
