@@ -4,6 +4,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { CastProfile, Match, UserRole } from '../types';
+import { sendPushNotification } from './notificationService';
 
 // -----------------------------------------------------------
 // いいね送信
@@ -31,6 +32,14 @@ export async function sendLike(
       to_user_id: toUserId,
     });
     if (likeError) throw likeError;
+
+    // いいね通知
+    sendPushNotification({
+      recipientUserId: toUserId,
+      title: 'いいね！',
+      body: 'あなたにいいねが届きました',
+      notificationKey: 'notification_likes',
+    });
   }
 
   // 相手からのいいね確認
@@ -78,6 +87,20 @@ export async function sendLike(
       status: 'matched',
     });
     if (matchError) throw matchError;
+
+    // マッチング通知（両者に送信）
+    sendPushNotification({
+      recipientUserId: toUserId,
+      title: 'マッチング成立！',
+      body: 'マッチングが成立しました。チャットを始めましょう！',
+      notificationKey: 'notification_matches',
+    });
+    sendPushNotification({
+      recipientUserId: fromUserId,
+      title: 'マッチング成立！',
+      body: 'マッチングが成立しました。チャットを始めましょう！',
+      notificationKey: 'notification_matches',
+    });
   }
 
   return { matched: true };

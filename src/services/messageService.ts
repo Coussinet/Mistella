@@ -4,6 +4,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { Message } from '../types';
+import { sendPushNotification } from './notificationService';
 
 const DEFAULT_PAGE_SIZE = 30;
 
@@ -59,6 +60,24 @@ export async function sendMessage(
 
   if (error) throw error;
   if (!data) throw new Error('メッセージの送信に失敗しました。');
+
+  // 相手に通知を送信（非同期で失敗してもメッセージ送信は成功扱い）
+  const { data: match } = await supabase
+    .from('matches')
+    .select('customer_id, cast_id')
+    .eq('id', matchId)
+    .maybeSingle();
+  if (match) {
+    const recipientId = match.customer_id === senderId ? match.cast_id : match.customer_id;
+    sendPushNotification({
+      recipientUserId: recipientId,
+      title: '新しいメッセージ',
+      body: content ?? '画像が届きました',
+      notificationKey: 'notification_messages',
+      data: { matchId },
+    });
+  }
+
   return data as Message;
 }
 

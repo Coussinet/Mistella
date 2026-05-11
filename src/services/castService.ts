@@ -4,6 +4,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { CustomerNote, TonightRequest, WorkStatus } from '../types';
+import { sendPushNotification } from './notificationService';
 
 // -----------------------------------------------------------
 // 出勤ステータス更新
@@ -97,12 +98,28 @@ export async function updateTonightRequestStatus(
   requestId: string,
   status: string,
 ): Promise<void> {
+  const { data: request } = await supabase
+    .from('tonight_requests')
+    .select('customer_id')
+    .eq('id', requestId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('tonight_requests')
     .update({ status })
     .eq('id', requestId);
 
   if (error) throw error;
+
+  if (request && (status === 'accepted' || status === 'declined')) {
+    const statusLabel = status === 'accepted' ? '承諾' : '辞退';
+    sendPushNotification({
+      recipientUserId: request.customer_id,
+      title: '今夜行ける？の返答',
+      body: `リクエストが${statusLabel}されました`,
+      notificationKey: 'notification_tonight_responses',
+    });
+  }
 }
 
 // -----------------------------------------------------------

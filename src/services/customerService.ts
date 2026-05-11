@@ -4,6 +4,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { Favorite, Footprint } from '../types';
+import { sendPushNotification } from './notificationService';
 
 // -----------------------------------------------------------
 // 今夜行ける？送信
@@ -29,6 +30,13 @@ export async function sendTonightRequest(
   });
 
   if (error) throw error;
+
+  sendPushNotification({
+    recipientUserId: castId,
+    title: '今夜行ける？リクエスト',
+    body: message ?? 'リクエストが届いています',
+    notificationKey: 'notification_tonight_requests',
+  });
 }
 
 // -----------------------------------------------------------
