@@ -3,7 +3,7 @@
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -29,11 +29,13 @@ import {
   removeFavorite,
   sendTonightRequest,
 } from '../../services/customerService';
+import { blockUser, reportUser } from '../../services/blockService';
 import { sendLike } from '../../services/matchService';
 import { getMyTimelines } from '../../services/timelineService';
 import { useAuthStore } from '../../store/authStore';
 import type {
   CastProfile,
+  ReportReason,
   Timeline,
   User,
 } from '../../types';
@@ -224,6 +226,123 @@ const modalStyles = StyleSheet.create({
 });
 
 // -----------------------------------------------------------
+// 通報モーダル
+// -----------------------------------------------------------
+type ReportModalProps = {
+	visible: boolean;
+	targetUserId: string;
+	onClose: () => void;
+};
+
+const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+	{ value: 'spam',                  label: 'スパム' },
+	{ value: 'inappropriate_content', label: '不適切なコンテンツ' },
+	{ value: 'harassment',            label: '嫌がらせ' },
+	{ value: 'other',                 label: 'その他' },
+];
+
+function ReportModal({ visible, targetUserId, onClose }: ReportModalProps) {
+	const { user } = useAuthStore();
+	const [reason, setReason] = useState<ReportReason | null>(null);
+	const [detail, setDetail] = useState('');
+	const [sending, setSending] = useState(false);
+
+	const handleSend = async () => {
+		if (!user || !reason) return;
+		setSending(true);
+		try {
+			await reportUser({
+				reporterId: user.id,
+				reportedUserId: targetUserId,
+				reason,
+				detail: detail.trim() || undefined,
+			});
+			Alert.alert('通報完了', '通報を受け付けました。ご協力ありがとうございます。');
+			setReason(null);
+			setDetail('');
+			onClose();
+		} catch {
+			Alert.alert('エラー', '通報に失敗しました。');
+		} finally {
+			setSending(false);
+		}
+	};
+
+	return (
+		<Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+			<View style={reportStyles.overlay}>
+				<View style={reportStyles.sheet}>
+					<Text style={reportStyles.title}>通報する</Text>
+					<Text style={reportStyles.subtitle}>理由を選択してください</Text>
+					{REPORT_REASONS.map((r) => (
+						<TouchableOpacity
+							key={r.value}
+							style={[reportStyles.reasonRow, reason === r.value && reportStyles.reasonRowSelected]}
+							onPress={() => setReason(r.value)}
+						>
+							<MaterialIcons
+								name={reason === r.value ? 'radio-button-checked' : 'radio-button-unchecked'}
+								size={20}
+								color={reason === r.value ? COLORS.gold : COLORS.textMuted}
+							/>
+							<Text style={[reportStyles.reasonText, reason === r.value && { color: COLORS.gold }]}>
+								{r.label}
+							</Text>
+						</TouchableOpacity>
+					))}
+					<TextInput
+						style={reportStyles.input}
+						placeholder="補足（任意・200文字以内）"
+						placeholderTextColor={COLORS.textMuted}
+						value={detail}
+						onChangeText={setDetail}
+						multiline
+						maxLength={200}
+					/>
+					<View style={reportStyles.actions}>
+						<TouchableOpacity style={reportStyles.cancelButton} onPress={onClose}>
+							<Text style={reportStyles.cancelText}>キャンセル</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[reportStyles.sendButton, (!reason || sending) && { opacity: 0.5 }]}
+							onPress={handleSend}
+							disabled={!reason || sending}
+						>
+							{sending
+								? <ActivityIndicator size="small" color={COLORS.background} />
+								: <Text style={reportStyles.sendText}>通報する</Text>}
+						</TouchableOpacity>
+					</View>
+				</View>
+			</View>
+		</Modal>
+	);
+}
+
+const reportStyles = StyleSheet.create({
+	overlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+	sheet:    { backgroundColor: COLORS.surface, borderRadius: 16, padding: 24, width: '100%' },
+	title:    { color: COLORS.text, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 4 },
+	subtitle: { color: COLORS.textSecondary, fontSize: 12, textAlign: 'center', marginBottom: 16 },
+	reasonRow: {
+		flexDirection: 'row', alignItems: 'center', gap: 10,
+		paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+	},
+	reasonRowSelected: { backgroundColor: 'transparent' },
+	reasonText:        { color: COLORS.text, fontSize: 14 },
+	input: {
+		backgroundColor: COLORS.surfaceLight, color: COLORS.text, borderRadius: 10,
+		padding: 12, fontSize: 14, minHeight: 64, textAlignVertical: 'top',
+		borderWidth: 1, borderColor: COLORS.border, marginTop: 12, marginBottom: 16,
+	},
+	actions:      { flexDirection: 'row', gap: 10 },
+	cancelButton: { flex: 1, paddingVertical: 12, borderRadius: 24, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+	cancelText:   { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
+	sendButton:   { flex: 1, paddingVertical: 12, borderRadius: 24, backgroundColor: COLORS.error, alignItems: 'center' },
+	sendText:     { color: COLORS.text, fontSize: 14, fontWeight: '700' },
+});
+
+// -----------------------------------------------------------
 // メイン画面
 // -----------------------------------------------------------
 
@@ -241,6 +360,7 @@ export default function UserProfileScreen() {
   const [liking, setLiking] = useState(false);
   const [favoritingAction, setFavoritingAction] = useState(false);
   const [tonightModalVisible, setTonightModalVisible] = useState(false);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!currentUser) return;
@@ -317,6 +437,53 @@ export default function UserProfileScreen() {
       setFavoritingAction(false);
     }
   };
+
+  const navigation = useNavigation();
+
+  const handleBlock = () => {
+    if (!currentUser) return;
+    Alert.alert(
+      'ブロックしますか？',
+      'ブロックすると相手はあなたのプロフィールや投稿を閲覧できなくなります。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: 'ブロック',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await blockUser(currentUser.id, userId);
+              Alert.alert('ブロックしました', '', [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            } catch {
+              Alert.alert('エラー', 'ブロックに失敗しました。');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  useEffect(() => {
+    if (currentUser?.id === userId) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() =>
+            Alert.alert('', '', [
+              { text: '通報する', onPress: () => setReportModalVisible(true) },
+              { text: 'ブロックする', style: 'destructive', onPress: handleBlock },
+              { text: 'キャンセル', style: 'cancel' },
+            ])
+          }
+          style={{ paddingRight: 16 }}
+        >
+          <MaterialIcons name="more-vert" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [userId, currentUser, navigation, handleBlock]);
 
   if (loading) {
     return (
@@ -472,6 +639,11 @@ export default function UserProfileScreen() {
           onClose={() => setTonightModalVisible(false)}
         />
       )}
+      <ReportModal
+        visible={reportModalVisible}
+        targetUserId={userId}
+        onClose={() => setReportModalVisible(false)}
+      />
     </>
   );
 }
