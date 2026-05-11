@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -9,6 +10,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { supabase } from './src/lib/supabase';
 import { getProfile, getCastProfile } from './src/services/authService';
+import { registerPushToken } from './src/services/notificationService';
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
@@ -18,6 +20,14 @@ Notifications.setNotificationHandler({
     shouldSetBadge: true,
   }),
 });
+
+if (Platform.OS === 'android') {
+  Notifications.setNotificationChannelAsync('default', {
+    name: 'デフォルト',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +53,7 @@ export default function App() {
         try {
           const profile = await getProfile(session.user.id);
           setProfile(profile);
+          registerPushToken(session.user.id).catch(() => {});
           if (profile.role === 'cast') {
             try {
               const castProfile = await getCastProfile(session.user.id);
@@ -66,6 +77,7 @@ export default function App() {
         try {
           const profile = await getProfile(session.user.id);
           setProfile(profile);
+          registerPushToken(session.user.id).catch(() => {});
           if (profile.role === 'cast') {
             try {
               const castProfile = await getCastProfile(session.user.id);
