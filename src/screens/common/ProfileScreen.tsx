@@ -229,7 +229,7 @@ export default function ProfileScreen() {
           {/* 通知設定リンク */}
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('NotificationSettings' as never)}
+            onPress={() => navigation.navigate('NotificationSettings')}
           >
             <MaterialIcons name="notifications" size={22} color={COLORS.gold} />
             <Text style={styles.menuItemText}>通知設定</Text>
