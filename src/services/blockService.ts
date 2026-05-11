@@ -27,12 +27,13 @@ export async function isBlocked(
 	blockerId: string,
 	blockedId: string,
 ): Promise<boolean> {
-	const { data } = await supabase
+	const { data, error } = await supabase
 		.from('blocks')
 		.select('id')
 		.eq('blocker_id', blockerId)
 		.eq('blocked_id', blockedId)
 		.maybeSingle();
+	if (error) throw error;
 	return data !== null;
 }
 

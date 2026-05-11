@@ -300,7 +300,7 @@ function ReportModal({ visible, targetUserId, onClose }: ReportModalProps) {
 						maxLength={200}
 					/>
 					<View style={reportStyles.actions}>
-						<TouchableOpacity style={reportStyles.cancelButton} onPress={onClose}>
+						<TouchableOpacity style={reportStyles.cancelButton} onPress={() => { setReason(null); setDetail(''); onClose(); }}>
 							<Text style={reportStyles.cancelText}>キャンセル</Text>
 						</TouchableOpacity>
 						<TouchableOpacity
@@ -440,7 +440,7 @@ export default function UserProfileScreen() {
 
   const navigation = useNavigation();
 
-  const handleBlock = () => {
+  const handleBlock = useCallback(() => {
     if (!currentUser) return;
     Alert.alert(
       'ブロックしますか？',
@@ -463,7 +463,7 @@ export default function UserProfileScreen() {
         },
       ],
     );
-  };
+  }, [currentUser, userId, navigation]);
 
   useEffect(() => {
     if (currentUser?.id === userId) return;
