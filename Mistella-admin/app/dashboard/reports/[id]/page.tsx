@@ -24,13 +24,15 @@ export default async function ReportDetailPage({ params }: { params: { id: strin
 
   async function updateStatus(formData: FormData) {
     'use server'
-    const admin = createAdminClient()
     const status = formData.get('status') as string
+    if (status !== 'reviewed' && status !== 'dismissed') throw new Error('Invalid status')
+    const admin = createAdminClient()
     const { data: { user } } = await (await createClient()).auth.getUser()
+    if (!user) throw new Error('Unauthorized')
     await admin.from('reports').update({
       status,
       reviewed_at: new Date().toISOString(),
-      reviewed_by: user?.id,
+      reviewed_by: user.id,
     }).eq('id', params.id)
     redirect('/dashboard/reports')
   }
