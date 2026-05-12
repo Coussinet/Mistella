@@ -103,7 +103,6 @@ export default function RegisterScreen({ navigation }: Props) {
       });
 
       if (authError) {
-        console.error('[Register] authError:', authError.message, authError);
         setError(translateError(authError.message));
         return;
       }
