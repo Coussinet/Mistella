@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useAppStore } from '../store/appStore';
 import type { CustomerTabParamList } from '../types';
@@ -63,7 +63,7 @@ const MatchesStack = createNativeStackNavigator();
 function MatchesStackNavigator() {
   return (
     <MatchesStack.Navigator screenOptions={stackScreenOptions}>
-      <MatchesStack.Screen name="MatchesMain" component={MatchesScreen} options={{ title: 'マッチ一覧' }} />
+      <MatchesStack.Screen name="MatchesMain" component={MatchesScreen} options={{ title: 'マッチ・メッセージ' }} />
       <MatchesStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
       <MatchesStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
     </MatchesStack.Navigator>
@@ -98,6 +98,7 @@ export default function CustomerTabNavigator() {
         tabBarActiveTintColor: COLORS.gold,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
       }}
     >
       <Tab.Screen
@@ -138,16 +139,6 @@ export default function CustomerTabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="favorite" size={size} color={color} />
           ),
-        }}
-      />
-      <Tab.Screen
-        name="Messages"
-        component={MatchesStackNavigator}
-        options={{
-          tabBarLabel: 'メッセージ',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="chat-bubble" size={size} color={color} />
-          ),
           tabBarBadge: unreadMessageCount > 0 ? unreadMessageCount : undefined,
           tabBarBadgeStyle: styles.badge,
         }}
@@ -166,18 +157,33 @@ export default function CustomerTabNavigator() {
   );
 }
 
+const GLASS_BG = Platform.OS === 'ios'
+  ? 'rgba(18, 18, 28, 0.88)'
+  : 'rgba(16, 16, 24, 0.95)';
+
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: COLORS.surface,
-    borderTopColor: COLORS.border,
-    borderTopWidth: 1,
-    paddingBottom: 4,
-    paddingTop: 4,
-    height: 60,
+    backgroundColor: GLASS_BG,
+    borderTopWidth: 0,
+    marginHorizontal: 14,
+    marginBottom: 4,
+    borderRadius: 28,
+    height: 68,
+    borderWidth: 0.5,
+    borderColor: 'rgba(201, 168, 76, 0.25)',
+    elevation: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
   },
   tabBarLabel: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  tabBarItem: {
+    paddingTop: 8,
   },
   badge: {
     backgroundColor: COLORS.error,

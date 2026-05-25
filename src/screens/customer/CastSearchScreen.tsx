@@ -62,7 +62,7 @@ async function fetchCasts({
     .select('*, user:users(*)')
     .range(from, to)
     .order('is_sponsored', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('user_id', { ascending: false });
 
   if (workingOnly) {
     query = query.eq('is_working', true);
@@ -249,7 +249,7 @@ export default function CastSearchScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={[]}>
       {/* 検索バー */}
       <View style={styles.searchBar}>
         <MaterialIcons name="search" size={20} color={COLORS.textMuted} />

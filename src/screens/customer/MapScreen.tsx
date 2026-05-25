@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -219,7 +220,7 @@ export default function MapScreen() {
       addFootprint(profile.id, cast.user_id).catch(() => null);
     }
     setSelectedCast(null);
-    navigation.navigate('CastProfile', { userId: cast.user_id });
+    navigation.navigate('UserProfile', { userId: cast.user_id });
   };
 
   return (
@@ -241,16 +242,23 @@ export default function MapScreen() {
                 latitude: cast.location_lat,
                 longitude: cast.location_lng,
               }}
+              tracksViewChanges={false}
               onPress={() => setSelectedCast(cast)}
             >
               <View style={styles.pin}>
-                <View style={styles.pinInner}>
-                  <MaterialIcons
-                    name="person-pin"
-                    size={28}
-                    color={COLORS.gold}
+                {cast.user.avatar_url ? (
+                  <Image
+                    source={{ uri: cast.user.avatar_url }}
+                    style={styles.pinAvatar}
                   />
-                </View>
+                ) : (
+                  <View style={[styles.pinAvatar, styles.pinAvatarFallback]}>
+                    <Text style={styles.pinInitial}>
+                      {cast.user.nickname?.[0] ?? '?'}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.pinTail} />
               </View>
             </Marker>
           ) : null,
@@ -362,19 +370,39 @@ const styles = StyleSheet.create({
   // ピン
   pin: {
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  pinInner: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    borderWidth: 1.5,
+  pinAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2.5,
     borderColor: COLORS.gold,
-    padding: 2,
     shadowColor: COLORS.gold,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  pinAvatarFallback: {
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinInitial: {
+    color: COLORS.gold,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  pinTail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 7,
+    borderRightWidth: 7,
+    borderTopWidth: 9,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: COLORS.gold,
+    marginTop: -1,
   },
 
   // プレビューカード

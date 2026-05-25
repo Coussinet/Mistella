@@ -3,7 +3,7 @@
 // ============================================================
 
 import { supabase } from '../lib/supabase';
-import type { CastProfile, User, UserRole } from '../types';
+import type { CastProfile, CustomerProfile, User, UserRole } from '../types';
 
 // -----------------------------------------------------------
 // サインアップ
@@ -125,4 +125,38 @@ export async function upsertCastProfile(
   if (error) throw error;
   if (!data) throw new Error('キャストプロフィールの保存に失敗しました。');
   return data as CastProfile;
+}
+
+// -----------------------------------------------------------
+// 顧客プロフィール取得
+// -----------------------------------------------------------
+
+/** customer_profiles テーブルから顧客プロフィールを取得する。 */
+export async function getCustomerProfile(userId: string): Promise<CustomerProfile | null> {
+  const { data, error } = await supabase
+    .from('customer_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as CustomerProfile | null;
+}
+
+// -----------------------------------------------------------
+// 顧客プロフィール作成/更新
+// -----------------------------------------------------------
+
+/** customer_profiles テーブルへ UPSERT する。 */
+export async function upsertCustomerProfile(
+  userId: string,
+  profile: Partial<CustomerProfile>,
+): Promise<CustomerProfile> {
+  const { data, error } = await supabase
+    .from('customer_profiles')
+    .upsert({ ...profile, user_id: userId }, { onConflict: 'user_id' })
+    .select()
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error('顧客プロフィールの保存に失敗しました。');
+  return data as CustomerProfile;
 }

@@ -41,6 +41,31 @@ export interface CastProfile {
   location_lat: number | null;
   location_lng: number | null;
   location_enabled: boolean;
+  age: number | null;
+  height: number | null;
+  blood_type: string | null;
+  hobbies: string | null;
+  personality: string | null;
+  charm_point: string | null;
+  favorite_drink: string | null;
+  service_style: string | null;
+  favorite_topics: string | null;
+  activities: string | null;
+  customer_message: string | null;
+  hometown: string | null;
+  motto: string | null;
+}
+
+export interface CustomerProfile {
+  user_id: string;
+  age: number | null;
+  occupation: string | null;
+  annual_income: string | null;
+  hobbies: string | null;
+  preferred_area: string | null;
+  appeal_message: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /** キャストプロフィールにユーザー情報を結合した拡張型 */
@@ -197,7 +222,6 @@ export type CustomerTabParamList = {
   CastSearch: undefined;
   Map: undefined;
   Matches: undefined;
-  Messages: undefined;
   Profile: undefined;
 };
 
