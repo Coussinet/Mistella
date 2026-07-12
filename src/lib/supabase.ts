@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+import type { Database } from '@/types/database';
 
 // -----------------------------------------------------------
 // 環境変数
@@ -81,7 +82,7 @@ const ExpoSecureStoreAdapter = {
 // Supabase クライアント
 // -----------------------------------------------------------
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: ExpoSecureStoreAdapter,
     autoRefreshToken: true,

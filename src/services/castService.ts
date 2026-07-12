@@ -2,15 +2,15 @@
 // Mistella - Cast Service（キャスト専用機能）
 // ============================================================
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type {
   BroadcastReactionType,
   BroadcastTonightRequest,
   CustomerNote,
   TonightRequest,
   WorkStatus,
-} from '../types';
-import { sendPushNotification } from './notificationService';
+} from '@/types';
+import { sendPushNotification } from '@/services/notificationService';
 
 // -----------------------------------------------------------
 // 出勤ステータス更新
@@ -240,12 +240,14 @@ export async function upsertCustomerNote(
   note: Partial<CustomerNote>,
 ): Promise<CustomerNote> {
   const now = new Date().toISOString();
+  // JOIN 済みの customer やサーバー管理カラムは upsert に含めない
+  const { customer: _c, id: _id, created_at: _ca, updated_at: _ua, cast_id: _ci, customer_id: _cu, ...noteFields } = note;
 
   const { data, error } = await supabase
     .from('customer_notes')
     .upsert(
       {
-        ...note,
+        ...noteFields,
         cast_id: castId,
         customer_id: customerId,
         updated_at: now,

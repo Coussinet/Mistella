@@ -18,10 +18,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import { useAuthStore } from '../../store/authStore';
-import type { AuthStackParamList } from '../../types';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
+import type { AuthStackParamList, User } from '@/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -90,7 +90,7 @@ export default function LoginScreen({ navigation }: Props) {
           .single();
 
         if (!profileError && profileData) {
-          setProfile(profileData);
+          setProfile(profileData as unknown as User);
         }
       }
     } catch (e) {

@@ -2,9 +2,9 @@
 // Mistella - Message Service
 // ============================================================
 
-import { supabase } from '../lib/supabase';
-import type { Message } from '../types';
-import { sendPushNotification } from './notificationService';
+import { supabase } from '@/lib/supabase';
+import type { Message } from '@/types';
+import { sendPushNotification } from '@/services/notificationService';
 
 const DEFAULT_PAGE_SIZE = 30;
 

@@ -23,13 +23,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import { createTimeline, getTimelines } from '../../services/timelineService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastStackParamList, Timeline } from '../../types';
-import { formatRelativeTime } from '../../utils/dateUtils';
-import { compressImage } from '../../utils/imageUtils';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { createTimeline, getTimelines } from '@/services/timelineService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastStackParamList, Timeline } from '@/types';
+import { formatRelativeTime } from '@/utils/dateUtils';
+import { compressImage } from '@/utils/imageUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PAGE_SIZE = 20;
@@ -367,7 +367,7 @@ export default function TimelineScreen() {
     setTimelines((prev) => [item, ...prev]);
   };
 
-  const ListEmpty = () => (
+  const listEmpty = (
     <View style={styles.emptyContainer}>
       <MaterialIcons name="dynamic-feed" size={64} color={COLORS.textMuted} />
       <Text style={styles.emptyTitle}>まだ投稿がありません</Text>
@@ -375,7 +375,7 @@ export default function TimelineScreen() {
     </View>
   );
 
-  const ListFooter = () =>
+  const listFooter =
     loading && timelines.length > 0 ? (
       <ActivityIndicator style={{ margin: 16 }} color={COLORS.gold} />
     ) : null;
@@ -399,8 +399,8 @@ export default function TimelineScreen() {
         onEndReachedThreshold={0.3}
         onRefresh={onRefresh}
         refreshing={refreshing}
-        ListEmptyComponent={loading ? null : <ListEmpty />}
-        ListFooterComponent={<ListFooter />}
+        ListEmptyComponent={loading ? null : listEmpty}
+        ListFooterComponent={listFooter}
         contentContainerStyle={timelines.length === 0 ? styles.emptyList : styles.listContent}
       />
 

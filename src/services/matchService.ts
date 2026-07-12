@@ -2,9 +2,9 @@
 // Mistella - Match Service
 // ============================================================
 
-import { supabase } from '../lib/supabase';
-import type { CastProfile, Match, UserRole } from '../types';
-import { sendPushNotification } from './notificationService';
+import { supabase } from '@/lib/supabase';
+import type { CastProfile, Match, UserRole } from '@/types';
+import { sendPushNotification } from '@/services/notificationService';
 
 // -----------------------------------------------------------
 // いいね送信
@@ -222,25 +222,13 @@ export async function getCasts(filters?: {
 
 /**
  * 現在位置から半径 radiusKm 以内の出勤中キャストを返す。
- * Supabase RPC `get_nearby_casts` を使用する想定。
- * RPC が存在しない場合は全件取得して JavaScript 側でフィルタリングする。
+ * 出勤中・位置情報ONのキャストを取得し、JS 側で距離フィルタリングする。
  */
 export async function getNearbyCasts(
   lat: number,
   lng: number,
   radiusKm: number = 5,
 ): Promise<CastProfile[]> {
-  // RPC を優先して呼び出す
-  const { data: rpcData, error: rpcError } = await supabase.rpc(
-    'get_nearby_casts',
-    { lat, lng, radius_km: radiusKm },
-  );
-
-  if (!rpcError && rpcData) {
-    return rpcData as CastProfile[];
-  }
-
-  // RPC が未実装の場合は JS 側で絞り込む（フォールバック）
   const { data, error } = await supabase
     .from('cast_profiles')
     .select('*, user:users(*)')
