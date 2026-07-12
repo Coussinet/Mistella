@@ -5,6 +5,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -32,7 +33,7 @@ import {
   useUserProfile,
 } from '@/hooks/queries/useUserProfile';
 import { useAuthStore } from '@/store/authStore';
-import type { ReportReason, Timeline } from '@/types';
+import type { CastStackParamList, ReportReason, Timeline } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (SCREEN_WIDTH - 4) / 3;
@@ -380,7 +381,8 @@ export default function UserProfileScreen() {
     favoriteMutation.mutate(!favorited);
   };
 
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<CastStackParamList>>();
 
   const { mutate: blockUserMutate } = blockMutation;
 

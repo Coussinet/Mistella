@@ -230,6 +230,18 @@ export default function ProfileScreen() {
             <Text style={styles.editButtonText}>プロフィールを編集</Text>
           </TouchableOpacity>
 
+          {/* 会った記録リンク（客側。キャストは記録タブから） */}
+          {profile?.role === 'customer' && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Contacts')}
+            >
+              <MaterialIcons name="menu-book" size={22} color={COLORS.gold} />
+              <Text style={styles.menuItemText}>会った記録</Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
+
           {/* 通知設定リンク */}
           <TouchableOpacity
             style={styles.menuItem}

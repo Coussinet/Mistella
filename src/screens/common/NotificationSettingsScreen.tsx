@@ -21,6 +21,7 @@ const SETTINGS: SettingItem[] = [
 	{ key: 'notification_likes',             label: 'いいね',                   description: 'いいねを受け取ったとき' },
 	{ key: 'notification_tonight_requests',  label: '今夜行ける？リクエスト',    description: 'リクエストを受信したとき（キャスト）' },
 	{ key: 'notification_tonight_responses', label: '今夜行ける？返答',          description: '承諾・辞退を受け取ったとき（顧客）' },
+	{ key: 'notification_meeting_reminders', label: '約束リマインダー',          description: '会った記録の次回の約束が近づいたとき' },
 ];
 
 export default function NotificationSettingsScreen() {
