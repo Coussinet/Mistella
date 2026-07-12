@@ -137,19 +137,46 @@ export interface BroadcastTonightRequest extends TonightRequest {
   my_reaction: TonightBroadcastReaction | null;
 }
 
-export interface CustomerNote {
+export interface PartnerNote {
   id: string;
-  cast_id: string;
-  customer_id: string;
+  author_id: string;
+  partner_id: string;
   note_text: string | null;
-  next_visit_date: string | null;
-  birthday: string | null;
   nickname_called: string | null;
+  birthday: string | null;
+  /** 相手の好み・特徴（好きなお酒・話題・NG など） */
+  preferences: string | null;
+  /** ボトルキープ履歴（キャスト用途） */
   bottle_history: string | null;
+  /** 次回来店予定日（キャスト用途） */
+  next_visit_date: string | null;
   created_at: string;
   updated_at: string;
-  /** JOIN済みの顧客情報（オプション） */
-  customer?: User;
+  /** JOIN済みの相手情報（オプション） */
+  partner?: User;
+}
+
+export interface MeetingRecord {
+  id: string;
+  author_id: string;
+  partner_id: string;
+  /** 会った日時 */
+  met_at: string;
+  /** 場所・店名 */
+  place: string | null;
+  /** 一緒にしたこと */
+  activities: string | null;
+  memo: string | null;
+  /** 金額（円）。客: 使った金額 / キャスト: 売上メモ */
+  amount_spent: number | null;
+  /** 次回の約束日時 */
+  next_promise_at: string | null;
+  /** 次回の約束の内容 */
+  next_promise_note: string | null;
+  created_at: string;
+  updated_at: string;
+  /** JOIN済みの相手情報（オプション） */
+  partner?: User;
 }
 
 export interface Favorite {
@@ -235,11 +262,12 @@ export type CastStackParamList = {
   ShopInfo: undefined;
   /** 今夜行ける？リクエスト一覧画面 */
   TonightRequests: undefined;
-  /** CRM（顧客管理）画面 */
-  CRM: undefined;
-  /** 顧客ノート詳細・編集画面（新規作成時は customerId のみ、編集時は noteId も渡す） */
-  CustomerNote: { customerId: string | undefined; noteId?: string };
-  CustomerNoteDetail: { noteId: string; customerId: string };
+  /** 記録（会った記録）一覧画面 */
+  Contacts: undefined;
+  /** 相手メモ + 会った記録タイムライン画面 */
+  PartnerNote: { partnerId: string | undefined };
+  /** 会った記録の作成・編集画面 */
+  MeetingRecordEdit: { partnerId: string; recordId?: string };
   ChatRoom: { matchId: string; partnerUser: User };
   UserProfile: { userId: string };
   EditProfile: undefined;
@@ -255,6 +283,12 @@ export type CustomerStackParamList = {
   UserProfile: { userId: string };
   ChatRoom: { matchId: string; partnerUser: User };
   SendTonightRequest: { targetCastId?: string };
+  /** 記録（会った記録）一覧画面 */
+  Contacts: undefined;
+  /** 相手メモ + 会った記録タイムライン画面 */
+  PartnerNote: { partnerId: string | undefined };
+  /** 会った記録の作成・編集画面 */
+  MeetingRecordEdit: { partnerId: string; recordId?: string };
   EditProfile: undefined;
   Favorites: undefined;
   Footprints: undefined;
@@ -284,6 +318,8 @@ export interface PushToken {
   notification_likes: boolean;
   notification_tonight_requests: boolean;
   notification_tonight_responses: boolean;
+  /** 約束リマインダー通知の受信設定 */
+  notification_meeting_reminders: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -295,6 +331,7 @@ export type NotificationSettingsKeys = Pick<
   | 'notification_likes'
   | 'notification_tonight_requests'
   | 'notification_tonight_responses'
+  | 'notification_meeting_reminders'
 >;
 
 export interface Block {

@@ -18,8 +18,9 @@ import UserProfileScreen from '@/screens/common/UserProfileScreen';
 import WorkingStatusScreen from '@/screens/cast/WorkingStatusScreen';
 import ShopInfoScreen from '@/screens/cast/ShopInfoScreen';
 import TonightRequestsScreen from '@/screens/cast/TonightRequestsScreen';
-import CRMScreen from '@/screens/cast/CRMScreen';
-import CustomerNoteScreen from '@/screens/cast/CustomerNoteScreen';
+import ContactsScreen from '@/screens/common/ContactsScreen';
+import PartnerNoteScreen from '@/screens/common/PartnerNoteScreen';
+import MeetingRecordEditScreen from '@/screens/common/MeetingRecordEditScreen';
 import NotificationSettingsScreen from '@/screens/common/NotificationSettingsScreen';
 
 const stackScreenOptions = {
@@ -42,6 +43,8 @@ function TimelineStackNavigator() {
     <TimelineStack.Navigator screenOptions={stackScreenOptions}>
       <TimelineStack.Screen name="TimelineMain" component={TimelineScreen} options={{ headerShown: false }} />
       <TimelineStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
+      <TimelineStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <TimelineStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
     </TimelineStack.Navigator>
   );
 }
@@ -65,6 +68,8 @@ function MatchesStackNavigator() {
       <MatchesStack.Screen name="MatchesMain" component={MatchesScreen} options={{ title: 'マッチ一覧' }} />
       <MatchesStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
       <MatchesStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
+      <MatchesStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <MatchesStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
     </MatchesStack.Navigator>
   );
 }
@@ -73,8 +78,9 @@ const CRMStack = createNativeStackNavigator<CastStacks>();
 function CRMStackNavigator() {
   return (
     <CRMStack.Navigator screenOptions={stackScreenOptions}>
-      <CRMStack.Screen name="CRM" component={CRMScreen} options={{ title: '顧客管理' }} />
-      <CRMStack.Screen name="CustomerNote" component={CustomerNoteScreen} options={{ title: '顧客メモ' }} />
+      <CRMStack.Screen name="Contacts" component={ContactsScreen} options={{ title: '記録' }} />
+      <CRMStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <CRMStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
       <CRMStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
     </CRMStack.Navigator>
   );
@@ -90,6 +96,8 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="Footprints" component={FootprintsScreen} options={{ title: '足跡' }} />
       <ProfileStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
       <ProfileStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
+      <ProfileStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <ProfileStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
       <ProfileStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: '通知設定' }} />
     </ProfileStack.Navigator>
   );
@@ -148,7 +156,7 @@ export default function CastTabNavigator() {
         name="Messages"
         component={CRMStackNavigator}
         options={{
-          tabBarLabel: '顧客管理',
+          tabBarLabel: '記録',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="people" size={size} color={color} />
           ),

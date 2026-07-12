@@ -8,7 +8,6 @@ import type {
   BroadcastTonightRequest,
   CastProfile,
   CastProfileWithUser,
-  CustomerNote,
   TonightRequest,
   WorkStatus,
 } from '@/types';
@@ -208,127 +207,6 @@ export async function reactToBroadcast(
       notificationKey: 'notification_tonight_responses',
     });
   }
-}
-
-// -----------------------------------------------------------
-// 顧客ノート一覧取得
-// -----------------------------------------------------------
-
-/**
- * キャストが管理する顧客ノートの一覧を取得する。
- * 顧客情報を JOIN して返す。
- */
-export async function getCustomerNotes(
-  castId: string,
-): Promise<CustomerNote[]> {
-  const { data, error } = await supabase
-    .from('customer_notes')
-    .select('*, customer:users!customer_notes_customer_id_fkey(*)')
-    .eq('cast_id', castId)
-    .order('updated_at', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as CustomerNote[];
-}
-
-// -----------------------------------------------------------
-// 顧客ノート作成/更新
-// -----------------------------------------------------------
-
-/** 顧客ノートを UPSERT する。cast_id + customer_id の複合ユニーク制約を想定。 */
-export async function upsertCustomerNote(
-  castId: string,
-  customerId: string,
-  note: Partial<CustomerNote>,
-): Promise<CustomerNote> {
-  const now = new Date().toISOString();
-  // JOIN 済みの customer やサーバー管理カラムは upsert に含めない
-  const { customer: _c, id: _id, created_at: _ca, updated_at: _ua, cast_id: _ci, customer_id: _cu, ...noteFields } = note;
-
-  const { data, error } = await supabase
-    .from('customer_notes')
-    .upsert(
-      {
-        ...noteFields,
-        cast_id: castId,
-        customer_id: customerId,
-        updated_at: now,
-      },
-      { onConflict: 'cast_id,customer_id' },
-    )
-    .select('*, customer:users!customer_notes_customer_id_fkey(*)')
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error('顧客ノートの保存に失敗しました。');
-  return data as CustomerNote;
-}
-
-// -----------------------------------------------------------
-// リマインダー対象顧客の取得
-// -----------------------------------------------------------
-
-/**
- * リマインダー対象となる顧客ノートを返す。
- * - 次回来店日が今日から 3 日以内
- * - 誕生日が今日から 7 日以内（年を無視して月日で比較）
- */
-export async function getReminderCustomers(
-  castId: string,
-): Promise<CustomerNote[]> {
-  const today = new Date();
-
-  // 来店リマインダー: 3 日以内
-  const visitLimit = new Date(today);
-  visitLimit.setDate(visitLimit.getDate() + 3);
-
-  // 誕生日リマインダー: 7 日以内（簡易実装: next_visit_date と birthday を OR 条件で取得）
-  const birthdayLimit = new Date(today);
-  birthdayLimit.setDate(birthdayLimit.getDate() + 7);
-
-  const todayStr = today.toISOString().split('T')[0];
-  const visitLimitStr = visitLimit.toISOString().split('T')[0];
-  const birthdayLimitStr = birthdayLimit.toISOString().split('T')[0];
-
-  // 来店日が範囲内のノート
-  const { data: visitData, error: visitError } = await supabase
-    .from('customer_notes')
-    .select('*, customer:users!customer_notes_customer_id_fkey(*)')
-    .eq('cast_id', castId)
-    .gte('next_visit_date', todayStr)
-    .lte('next_visit_date', visitLimitStr);
-
-  if (visitError) throw visitError;
-
-  // 誕生日が範囲内のノート（月日のみ比較するため全件取得して JS でフィルタ）
-  const { data: allNotes, error: allError } = await supabase
-    .from('customer_notes')
-    .select('*, customer:users!customer_notes_customer_id_fkey(*)')
-    .eq('cast_id', castId)
-    .not('birthday', 'is', null);
-
-  if (allError) throw allError;
-
-  const todayMD = todayStr.slice(5); // MM-DD
-  const birthdayLimitMD = birthdayLimitStr.slice(5);
-
-  const birthdayReminders = ((allNotes ?? []) as CustomerNote[]).filter(
-    (note) => {
-      if (!note.birthday) return false;
-      const birthdayMD = note.birthday.slice(5); // MM-DD
-      // 月をまたぐ場合（例: 12-29 ～ 01-04）も考慮した簡易比較
-      return birthdayMD >= todayMD && birthdayMD <= birthdayLimitMD;
-    },
-  );
-
-  // 重複を除いてマージ
-  const visitIds = new Set((visitData ?? []).map((n) => n.id));
-  const merged = [
-    ...((visitData ?? []) as CustomerNote[]),
-    ...birthdayReminders.filter((n) => !visitIds.has(n.id)),
-  ];
-
-  return merged;
 }
 
 // -----------------------------------------------------------

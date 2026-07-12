@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       announcements: {
@@ -182,60 +207,6 @@ export type Database = {
             foreignKeyName: "cast_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      customer_notes: {
-        Row: {
-          birthday: string | null
-          bottle_history: string | null
-          cast_id: string
-          created_at: string | null
-          customer_id: string
-          id: string
-          next_visit_date: string | null
-          nickname_called: string | null
-          note_text: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          birthday?: string | null
-          bottle_history?: string | null
-          cast_id: string
-          created_at?: string | null
-          customer_id: string
-          id?: string
-          next_visit_date?: string | null
-          nickname_called?: string | null
-          note_text?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          birthday?: string | null
-          bottle_history?: string | null
-          cast_id?: string
-          created_at?: string | null
-          customer_id?: string
-          id?: string
-          next_visit_date?: string | null
-          nickname_called?: string | null
-          note_text?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customer_notes_cast_id_fkey"
-            columns: ["cast_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "customer_notes_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -432,6 +403,66 @@ export type Database = {
           },
         ]
       }
+      meeting_records: {
+        Row: {
+          activities: string | null
+          amount_spent: number | null
+          author_id: string
+          created_at: string | null
+          id: string
+          memo: string | null
+          met_at: string
+          next_promise_at: string | null
+          next_promise_note: string | null
+          partner_id: string
+          place: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activities?: string | null
+          amount_spent?: number | null
+          author_id: string
+          created_at?: string | null
+          id?: string
+          memo?: string | null
+          met_at: string
+          next_promise_at?: string | null
+          next_promise_note?: string | null
+          partner_id: string
+          place?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activities?: string | null
+          amount_spent?: number | null
+          author_id?: string
+          created_at?: string | null
+          id?: string
+          memo?: string | null
+          met_at?: string
+          next_promise_at?: string | null
+          next_promise_note?: string | null
+          partner_id?: string
+          place?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_records_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_records_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string | null
@@ -477,12 +508,70 @@ export type Database = {
           },
         ]
       }
+      partner_notes: {
+        Row: {
+          author_id: string
+          birthday: string | null
+          bottle_history: string | null
+          created_at: string | null
+          id: string
+          next_visit_date: string | null
+          nickname_called: string | null
+          note_text: string | null
+          partner_id: string
+          preferences: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          birthday?: string | null
+          bottle_history?: string | null
+          created_at?: string | null
+          id?: string
+          next_visit_date?: string | null
+          nickname_called?: string | null
+          note_text?: string | null
+          partner_id: string
+          preferences?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          birthday?: string | null
+          bottle_history?: string | null
+          created_at?: string | null
+          id?: string
+          next_visit_date?: string | null
+          nickname_called?: string | null
+          note_text?: string | null
+          partner_id?: string
+          preferences?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_notes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_tokens: {
         Row: {
           created_at: string | null
           id: string
           notification_likes: boolean | null
           notification_matches: boolean | null
+          notification_meeting_reminders: boolean | null
           notification_messages: boolean | null
           notification_tonight_requests: boolean | null
           notification_tonight_responses: boolean | null
@@ -496,6 +585,7 @@ export type Database = {
           id?: string
           notification_likes?: boolean | null
           notification_matches?: boolean | null
+          notification_meeting_reminders?: boolean | null
           notification_messages?: boolean | null
           notification_tonight_requests?: boolean | null
           notification_tonight_responses?: boolean | null
@@ -509,6 +599,7 @@ export type Database = {
           id?: string
           notification_likes?: boolean | null
           notification_matches?: boolean | null
+          notification_meeting_reminders?: boolean | null
           notification_messages?: boolean | null
           notification_tonight_requests?: boolean | null
           notification_tonight_responses?: boolean | null
@@ -898,6 +989,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

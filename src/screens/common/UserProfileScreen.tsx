@@ -415,6 +415,10 @@ export default function UserProfileScreen() {
         <TouchableOpacity
           onPress={() =>
             Alert.alert('', '', [
+              {
+                text: 'メモ・会った記録',
+                onPress: () => navigation.navigate('PartnerNote', { partnerId: userId }),
+              },
               { text: '通報する', onPress: () => setReportModalVisible(true) },
               { text: 'ブロックする', style: 'destructive', onPress: handleBlock },
               { text: 'キャンセル', style: 'cancel' },

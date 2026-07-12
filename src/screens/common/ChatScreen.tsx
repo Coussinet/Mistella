@@ -114,8 +114,21 @@ export default function ChatScreen() {
   const sending = sendMutation.isPending;
 
   useEffect(() => {
-    navigation.setOptions({ title: partnerUser.nickname });
-  }, [navigation, partnerUser.nickname]);
+    navigation.setOptions({
+      title: partnerUser.nickname,
+      // 相手メモ・会った記録への導線
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('PartnerNote', { partnerId: partnerUser.id })}
+          style={{ paddingRight: 4 }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="メモ・会った記録"
+        >
+          <MaterialIcons name="menu-book" size={22} color={COLORS.gold} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, partnerUser.nickname, partnerUser.id]);
 
   // 新着メッセージが来たら末尾にスクロール
   useEffect(() => {

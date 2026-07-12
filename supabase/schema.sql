@@ -167,33 +167,60 @@ COMMENT ON COLUMN public.tonight_requests.message         IS 'リクエストに
 COMMENT ON COLUMN public.tonight_requests.expires_at      IS 'リクエストの有効期限';
 
 -- -----------------------------------------------------------------------------
--- 8. customer_notes テーブル
--- キャストがお客様について記録するメモ（お客様は絶対に閲覧不可）
+-- 8. partner_notes / meeting_records テーブル
+-- 「会った記録」機能（両ロール共通）。書いた本人のみ閲覧可。
+-- ※ 旧 customer_notes はマイグレーション 008 で partner_notes へ移行・廃止済み
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.customer_notes (
-    id               UUID    DEFAULT gen_random_uuid() PRIMARY KEY,
-    cast_id          UUID    NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    customer_id      UUID    NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS public.partner_notes (
+    id               UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+    author_id        UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    partner_id       UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     note_text        TEXT,
-    next_visit_date  DATE,
-    birthday         DATE,
     nickname_called  TEXT,
+    birthday         DATE,
+    preferences      TEXT,
     bottle_history   TEXT,
+    next_visit_date  DATE,
     created_at       TIMESTAMPTZ DEFAULT now(),
     updated_at       TIMESTAMPTZ DEFAULT now(),
-    UNIQUE (cast_id, customer_id)
+    UNIQUE (author_id, partner_id),
+    CHECK (author_id <> partner_id)
 );
 
-COMMENT ON TABLE  public.customer_notes                     IS 'キャストがお客様について記録する秘密メモ（お客様は閲覧不可）';
-COMMENT ON COLUMN public.customer_notes.id                 IS 'ノート ID';
-COMMENT ON COLUMN public.customer_notes.cast_id            IS 'メモを書いたキャストの users.id';
-COMMENT ON COLUMN public.customer_notes.customer_id        IS 'メモの対象お客様の users.id';
-COMMENT ON COLUMN public.customer_notes.note_text          IS '自由記述メモ';
-COMMENT ON COLUMN public.customer_notes.next_visit_date    IS '次回来店予定日';
-COMMENT ON COLUMN public.customer_notes.birthday           IS 'お客様の誕生日';
-COMMENT ON COLUMN public.customer_notes.nickname_called    IS 'お客様の呼び名（愛称）';
-COMMENT ON COLUMN public.customer_notes.bottle_history     IS 'ボトルキープ履歴';
-COMMENT ON COLUMN public.customer_notes.updated_at         IS '最終更新日時（トリガーで自動更新）';
+COMMENT ON TABLE  public.partner_notes                    IS '相手について記録するメモ（書いた本人のみ閲覧可・両ロール共通）';
+COMMENT ON COLUMN public.partner_notes.author_id          IS 'メモを書いた本人の users.id';
+COMMENT ON COLUMN public.partner_notes.partner_id         IS 'メモ対象の相手の users.id';
+COMMENT ON COLUMN public.partner_notes.note_text          IS '自由記述メモ';
+COMMENT ON COLUMN public.partner_notes.nickname_called    IS '相手の呼び名（愛称）';
+COMMENT ON COLUMN public.partner_notes.birthday           IS '相手の誕生日';
+COMMENT ON COLUMN public.partner_notes.preferences        IS '相手の好み・特徴（好きなお酒・話題・NG など）';
+COMMENT ON COLUMN public.partner_notes.bottle_history     IS 'ボトルキープ履歴（キャスト用途）';
+COMMENT ON COLUMN public.partner_notes.next_visit_date    IS '次回来店予定日（キャスト用途）';
+
+CREATE TABLE IF NOT EXISTS public.meeting_records (
+    id                 UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+    author_id          UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    partner_id         UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    met_at             TIMESTAMPTZ NOT NULL,
+    place              TEXT,
+    activities         TEXT,
+    memo               TEXT,
+    amount_spent       INTEGER,
+    next_promise_at    TIMESTAMPTZ,
+    next_promise_note  TEXT,
+    created_at         TIMESTAMPTZ DEFAULT now(),
+    updated_at         TIMESTAMPTZ DEFAULT now(),
+    CHECK (author_id <> partner_id)
+);
+
+COMMENT ON TABLE  public.meeting_records                     IS '会った記録（書いた本人のみ閲覧可・1ペアにつき複数件）';
+COMMENT ON COLUMN public.meeting_records.met_at              IS '会った日時';
+COMMENT ON COLUMN public.meeting_records.place               IS '場所・店名';
+COMMENT ON COLUMN public.meeting_records.activities          IS '一緒にしたこと';
+COMMENT ON COLUMN public.meeting_records.memo                IS '自由メモ';
+COMMENT ON COLUMN public.meeting_records.amount_spent        IS '金額（円）。客: 使った金額 / キャスト: 売上メモ';
+COMMENT ON COLUMN public.meeting_records.next_promise_at     IS '次回の約束日時';
+COMMENT ON COLUMN public.meeting_records.next_promise_note   IS '次回の約束の内容';
 
 -- -----------------------------------------------------------------------------
 -- 9. favorites テーブル
@@ -257,8 +284,11 @@ CREATE INDEX IF NOT EXISTS idx_tonight_requests_target_cast_id ON public.tonight
 -- tonight_requests: expires_at でのフィルタリングを高速化
 CREATE INDEX IF NOT EXISTS idx_tonight_requests_expires_at     ON public.tonight_requests (expires_at);
 
--- customer_notes: cast_id を軸にしたメモ一覧取得を高速化
-CREATE INDEX IF NOT EXISTS idx_customer_notes_cast_id          ON public.customer_notes (cast_id);
+-- partner_notes / meeting_records: 本人軸の一覧取得を高速化
+CREATE INDEX IF NOT EXISTS idx_partner_notes_author            ON public.partner_notes (author_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_meeting_records_author_met      ON public.meeting_records (author_id, met_at DESC);
+CREATE INDEX IF NOT EXISTS idx_meeting_records_author_partner  ON public.meeting_records (author_id, partner_id, met_at DESC);
+CREATE INDEX IF NOT EXISTS idx_meeting_records_promise         ON public.meeting_records (author_id, next_promise_at) WHERE next_promise_at IS NOT NULL;
 
 -- footprints: 特定ユーザーへの足跡一覧取得を高速化
 CREATE INDEX IF NOT EXISTS idx_footprints_visited_user_id      ON public.footprints (visited_user_id);
@@ -269,7 +299,7 @@ CREATE INDEX IF NOT EXISTS idx_footprints_visited_user_id      ON public.footpri
 
 -- -----------------------------------------------------------------------------
 -- updated_at 自動更新関数
--- cast_profiles・customer_notes の updated_at を UPDATE 時に自動で now() に更新する
+-- cast_profiles・partner_notes・meeting_records の updated_at を UPDATE 時に自動で now() に更新する
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS TRIGGER
@@ -293,15 +323,18 @@ CREATE TRIGGER trg_cast_profiles_updated_at
 COMMENT ON TRIGGER trg_cast_profiles_updated_at ON public.cast_profiles
     IS 'cast_profiles が更新されたとき updated_at を自動で更新する';
 
--- customer_notes の updated_at 自動更新トリガー
-DROP TRIGGER IF EXISTS trg_customer_notes_updated_at ON public.customer_notes;
-CREATE TRIGGER trg_customer_notes_updated_at
-    BEFORE UPDATE ON public.customer_notes
+-- partner_notes / meeting_records の updated_at 自動更新トリガー
+DROP TRIGGER IF EXISTS trg_partner_notes_updated_at ON public.partner_notes;
+CREATE TRIGGER trg_partner_notes_updated_at
+    BEFORE UPDATE ON public.partner_notes
     FOR EACH ROW
     EXECUTE FUNCTION public.set_updated_at();
 
-COMMENT ON TRIGGER trg_customer_notes_updated_at ON public.customer_notes
-    IS 'customer_notes が更新されたとき updated_at を自動で更新する';
+DROP TRIGGER IF EXISTS trg_meeting_records_updated_at ON public.meeting_records;
+CREATE TRIGGER trg_meeting_records_updated_at
+    BEFORE UPDATE ON public.meeting_records
+    FOR EACH ROW
+    EXECUTE FUNCTION public.set_updated_at();
 
 -- -----------------------------------------------------------------------------
 -- 相互いいねによるマッチ自動作成トリガー
@@ -528,33 +561,55 @@ CREATE POLICY "tonight_requests_update_target_cast"
     WITH CHECK (target_cast_id = auth.uid());
 
 -- =============================================================================
--- RLS: customer_notes
--- 重要: キャスト本人のみアクセス可能。お客様は絶対に読み書き不可。
--- =============================================================================
-ALTER TABLE public.customer_notes ENABLE ROW LEVEL SECURITY;
+-- RLS: partner_notes / meeting_records
+-- 書いた本人のみ全操作可。相手（partner）からは一切見えない。
+-- -----------------------------------------------------------------------------
+ALTER TABLE public.partner_notes   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_records ENABLE ROW LEVEL SECURITY;
 
--- キャスト本人のみ自分のメモを閲覧可能（お客様は閲覧不可）
-CREATE POLICY "customer_notes_select_cast_own"
-    ON public.customer_notes FOR SELECT
-    USING (cast_id = auth.uid());
+CREATE POLICY "partner_notes_select_own"
+    ON public.partner_notes FOR SELECT
+    TO authenticated
+    USING (author_id = auth.uid());
 
--- キャスト本人のみメモを作成可能
-CREATE POLICY "customer_notes_insert_cast_own"
-    ON public.customer_notes FOR INSERT
-    WITH CHECK (cast_id = auth.uid());
+CREATE POLICY "partner_notes_insert_own"
+    ON public.partner_notes FOR INSERT
+    TO authenticated
+    WITH CHECK (author_id = auth.uid());
 
--- キャスト本人のみメモを更新可能
-CREATE POLICY "customer_notes_update_cast_own"
-    ON public.customer_notes FOR UPDATE
-    USING (cast_id = auth.uid())
-    WITH CHECK (cast_id = auth.uid());
+CREATE POLICY "partner_notes_update_own"
+    ON public.partner_notes FOR UPDATE
+    TO authenticated
+    USING (author_id = auth.uid())
+    WITH CHECK (author_id = auth.uid());
 
--- キャスト本人のみメモを削除可能
-CREATE POLICY "customer_notes_delete_cast_own"
-    ON public.customer_notes FOR DELETE
-    USING (cast_id = auth.uid());
+CREATE POLICY "partner_notes_delete_own"
+    ON public.partner_notes FOR DELETE
+    TO authenticated
+    USING (author_id = auth.uid());
 
--- =============================================================================
+CREATE POLICY "meeting_records_select_own"
+    ON public.meeting_records FOR SELECT
+    TO authenticated
+    USING (author_id = auth.uid());
+
+CREATE POLICY "meeting_records_insert_own"
+    ON public.meeting_records FOR INSERT
+    TO authenticated
+    WITH CHECK (author_id = auth.uid());
+
+CREATE POLICY "meeting_records_update_own"
+    ON public.meeting_records FOR UPDATE
+    TO authenticated
+    USING (author_id = auth.uid())
+    WITH CHECK (author_id = auth.uid());
+
+CREATE POLICY "meeting_records_delete_own"
+    ON public.meeting_records FOR DELETE
+    TO authenticated
+    USING (author_id = auth.uid());
+
+-- -----------------------------------------------------------------------------
 -- RLS: favorites
 -- =============================================================================
 ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;

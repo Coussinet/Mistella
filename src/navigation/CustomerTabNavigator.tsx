@@ -19,6 +19,9 @@ import FavoritesScreen from '@/screens/common/FavoritesScreen';
 import FootprintsScreen from '@/screens/common/FootprintsScreen';
 import UserProfileScreen from '@/screens/common/UserProfileScreen';
 import NotificationSettingsScreen from '@/screens/common/NotificationSettingsScreen';
+import ContactsScreen from '@/screens/common/ContactsScreen';
+import PartnerNoteScreen from '@/screens/common/PartnerNoteScreen';
+import MeetingRecordEditScreen from '@/screens/common/MeetingRecordEditScreen';
 
 const stackScreenOptions = {
   headerStyle: { backgroundColor: COLORS.surface },
@@ -43,6 +46,8 @@ function TimelineStackNavigator() {
       <TimelineStack.Screen name="TimelineMain" component={CustomerHomeScreen} options={{ headerShown: false }} />
       <TimelineStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
       <TimelineStack.Screen name="SendTonightRequest" component={TonightSendScreen} options={{ title: '今夜行ける？' }} />
+      <TimelineStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <TimelineStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
     </TimelineStack.Navigator>
   );
 }
@@ -54,6 +59,8 @@ function CastSearchStackNavigator() {
       <CastSearchStack.Screen name="CastSearchMain" component={CastSearchScreen} options={{ title: 'キャスト検索' }} />
       <CastSearchStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
       <CastSearchStack.Screen name="SendTonightRequest" component={TonightSendScreen} options={{ title: '今夜行ける？' }} />
+      <CastSearchStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <CastSearchStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
     </CastSearchStack.Navigator>
   );
 }
@@ -64,6 +71,8 @@ function MapStackNavigator() {
     <MapStack.Navigator screenOptions={stackScreenOptions}>
       <MapStack.Screen name="MapMain" component={MapScreen} options={{ title: '近くのキャスト' }} />
       <MapStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
+      <MapStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <MapStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
     </MapStack.Navigator>
   );
 }
@@ -75,6 +84,8 @@ function MatchesStackNavigator() {
       <MatchesStack.Screen name="MatchesMain" component={MatchesScreen} options={{ title: 'マッチ・メッセージ' }} />
       <MatchesStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
       <MatchesStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
+      <MatchesStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <MatchesStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
     </MatchesStack.Navigator>
   );
 }
@@ -89,6 +100,9 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="Footprints" component={FootprintsScreen} options={{ title: '足跡' }} />
       <ProfileStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
       <ProfileStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
+      <ProfileStack.Screen name="Contacts" component={ContactsScreen} options={{ title: '会った記録' }} />
+      <ProfileStack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
+      <ProfileStack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
       <ProfileStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: '通知設定' }} />
     </ProfileStack.Navigator>
   );
