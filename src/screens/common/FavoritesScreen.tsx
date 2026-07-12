@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { getFavorites, removeFavorite } from '@/services/customerService';
 import { useAuthStore } from '@/store/authStore';
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   },
   workBadgeOn: {
     borderColor: COLORS.success,
-    backgroundColor: 'rgba(76,255,158,0.1)',
+    backgroundColor: withAlpha(COLORS.success, 0.1),
   },
   workBadgeOff: {
     borderColor: COLORS.textMuted,

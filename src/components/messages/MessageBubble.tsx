@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import type { Message } from '@/types';
 import Avatar from '@/components/common/Avatar';
 
@@ -199,10 +200,10 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   bubbleOwn: {
-    backgroundColor: 'rgba(201,168,76,0.18)', // COLORS.gold 30% opacity
+    backgroundColor: withAlpha(COLORS.gold, 0.18), // COLORS.gold 30% opacity
     borderBottomRightRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.35)',
+    borderColor: withAlpha(COLORS.gold, 0.35),
   },
   bubbleOther: {
     backgroundColor: COLORS.surface,

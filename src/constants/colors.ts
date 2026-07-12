@@ -37,11 +37,29 @@ export const COLORS = {
   error: '#FF4C6A',
   /** 成功・完了 */
   success: '#4CFF9E',
+  /** 警告・休憩中などの中間状態 */
+  accentWarm: '#FF9F4C',
 
   // ---- 特殊用途 -------------------------------------------
   /** スポンサー広告バッジ */
   sponsored: '#C9A84C',
+  /** モーダル等の背景オーバーレイ */
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  /** ガラス風タブバー・シートの背景（iOS: ブラー併用前提） */
+  glassBg: 'rgba(18, 18, 28, 0.88)',
+  /** ガラス風タブバー・シートの背景（Android: ブラーなし） */
+  glassBgSolid: 'rgba(16, 16, 24, 0.95)',
+  /** ガラス要素のゴールド枠線 */
+  glassBorder: 'rgba(201, 168, 76, 0.25)',
 } as const;
+
+/** グラデーション定義（expo-linear-gradient 用） */
+export const GRADIENTS = {
+  gold: ['#C9A84C', '#E8C97A'] as const,
+  surface: ['#16161E', '#0A0A0F'] as const,
+  /** 写真下部の読みやすさ確保用 */
+  photoOverlay: ['transparent', 'rgba(10, 10, 15, 0.85)'] as const,
+};
 
 /** COLORS の値型（文字列リテラル共用体） */
 export type Color = (typeof COLORS)[keyof typeof COLORS];

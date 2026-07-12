@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import {
   sendTonightRequest,
@@ -652,7 +653,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(201,168,76,0.12)',
+    backgroundColor: withAlpha(COLORS.gold, 0.12),
     borderWidth: 1.5,
     borderColor: COLORS.gold,
     alignItems: 'center',
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   castRowSelected: {
-    backgroundColor: 'rgba(201,168,76,0.08)',
+    backgroundColor: withAlpha(COLORS.gold, 0.08),
     borderRadius: 10,
     paddingHorizontal: 6,
   },
@@ -783,10 +784,10 @@ const styles = StyleSheet.create({
   selectedCastCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(201,168,76,0.08)',
+    backgroundColor: withAlpha(COLORS.gold, 0.08),
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(201,168,76,0.3)',
+    borderColor: withAlpha(COLORS.gold, 0.3),
     padding: 12,
     gap: 12,
   },

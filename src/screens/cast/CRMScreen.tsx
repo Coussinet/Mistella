@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '@/components/common/Avatar';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import * as castService from '@/services/castService';
 import { useAuthStore } from '@/store/authStore';
 import type { CastStackParamList, CustomerNote } from '@/types';
@@ -165,28 +166,28 @@ function ReminderBanner({ reminders, onPress }: ReminderBannerProps) {
               </Text>
               <View style={styles.reminderBadgesRow}>
                 {isVisitToday && (
-                  <View style={[styles.reminderBadge, { backgroundColor: 'rgba(255, 76, 106, 0.15)', borderColor: COLORS.error + '55' }]}>
+                  <View style={[styles.reminderBadge, { backgroundColor: withAlpha(COLORS.error, 0.15), borderColor: COLORS.error + '55' }]}>
                     <Text style={[styles.reminderBadgeText, { color: COLORS.error }]}>
                       来店: 今日！
                     </Text>
                   </View>
                 )}
                 {!isVisitToday && visitDays !== null && visitDays >= 0 && (
-                  <View style={[styles.reminderBadge, { backgroundColor: 'rgba(201, 168, 76, 0.15)', borderColor: COLORS.gold + '55' }]}>
+                  <View style={[styles.reminderBadge, { backgroundColor: withAlpha(COLORS.gold, 0.15), borderColor: COLORS.gold + '55' }]}>
                     <Text style={[styles.reminderBadgeText, { color: COLORS.gold }]}>
                       来店: {visitDays}日後
                     </Text>
                   </View>
                 )}
                 {isBirthdayToday && (
-                  <View style={[styles.reminderBadge, { backgroundColor: 'rgba(76, 255, 158, 0.15)', borderColor: COLORS.success + '55' }]}>
+                  <View style={[styles.reminderBadge, { backgroundColor: withAlpha(COLORS.success, 0.15), borderColor: COLORS.success + '55' }]}>
                     <Text style={[styles.reminderBadgeText, { color: COLORS.success }]}>
                       誕生日: 今日！
                     </Text>
                   </View>
                 )}
                 {!isBirthdayToday && note.birthday && isBirthdayApproaching(note.birthday) && (
-                  <View style={[styles.reminderBadge, { backgroundColor: 'rgba(76, 158, 255, 0.15)', borderColor: COLORS.neonBlue + '55' }]}>
+                  <View style={[styles.reminderBadge, { backgroundColor: withAlpha(COLORS.neonBlue, 0.15), borderColor: COLORS.neonBlue + '55' }]}>
                     <Text style={[styles.reminderBadgeText, { color: COLORS.neonBlue }]}>
                       誕生日: {getDaysUntil(note.birthday)}日後
                     </Text>
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   birthdayBadge: {
-    backgroundColor: 'rgba(76, 158, 255, 0.12)',
+    backgroundColor: withAlpha(COLORS.neonBlue, 0.12),
     paddingVertical: 2,
     paddingHorizontal: 7,
     borderRadius: 8,
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceLight,
   },
   visitBadgeUrgent: {
-    backgroundColor: 'rgba(201, 168, 76, 0.12)',
+    backgroundColor: withAlpha(COLORS.gold, 0.12),
   },
   visitText: {
     fontSize: 11,

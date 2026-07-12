@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import {
   getCastProfile,
   getCustomerProfile,
@@ -163,7 +164,7 @@ const chipStyles = StyleSheet.create({
   },
   chipActive: {
     borderColor: COLORS.gold,
-    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    backgroundColor: withAlpha(COLORS.gold, 0.15),
   },
   chipText: { color: COLORS.textSecondary, fontSize: 13 },
   chipTextActive: { color: COLORS.gold, fontWeight: '600' },

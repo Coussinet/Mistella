@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: COLORS.overlay,
     borderRadius: 16,
     padding: 4,
   },

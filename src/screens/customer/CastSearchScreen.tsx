@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
@@ -681,7 +682,7 @@ const styles = StyleSheet.create({
   // エリアモーダル
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'flex-end',
   },
   areaSheet: {
@@ -718,7 +719,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   areaItemActive: {
-    backgroundColor: 'rgba(201,168,76,0.12)',
+    backgroundColor: withAlpha(COLORS.gold, 0.12),
   },
   areaText: {
     color: COLORS.textSecondary,

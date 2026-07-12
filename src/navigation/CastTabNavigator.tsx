@@ -171,8 +171,8 @@ export default function CastTabNavigator() {
 }
 
 const GLASS_BG = Platform.OS === 'ios'
-  ? 'rgba(18, 18, 28, 0.88)'
-  : 'rgba(16, 16, 24, 0.95)';
+  ? COLORS.glassBg
+  : COLORS.glassBgSolid;
 
 const styles = StyleSheet.create({
   tabBar: {
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     height: 76,
     borderWidth: 0.5,
-    borderColor: 'rgba(201, 168, 76, 0.25)',
+    borderColor: COLORS.glassBorder,
     elevation: 24,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },

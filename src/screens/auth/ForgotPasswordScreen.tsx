@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import type { AuthStackParamList } from '@/types';
 
@@ -310,13 +311,13 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 76, 106, 0.1)',
+    backgroundColor: withAlpha(COLORS.error, 0.1),
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 76, 106, 0.3)',
+    borderColor: withAlpha(COLORS.error, 0.3),
     gap: 8,
   },
   errorText: {

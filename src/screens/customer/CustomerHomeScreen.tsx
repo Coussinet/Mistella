@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   // 投稿モーダル
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'flex-end',
   },
   postFormSheet: {

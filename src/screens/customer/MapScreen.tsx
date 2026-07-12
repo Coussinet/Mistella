@@ -18,92 +18,13 @@ import {
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { DARK_MAP_STYLE } from '@/constants/mapStyle';
 import { supabase } from '@/lib/supabase';
 import Avatar from '@/components/common/Avatar';
 import StatusBadge from '@/components/common/StatusBadge';
 import { addFootprint } from '@/services/customerService';
 import { useAuthStore } from '@/store/authStore';
 import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
-
-// -----------------------------------------------------------
-// Google Maps ダークスタイル定義
-// -----------------------------------------------------------
-
-const DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#0A0A0F' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0A0A0F' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8E8E99' }] },
-  {
-    featureType: 'administrative.locality',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#C9A84C' }],
-  },
-  {
-    featureType: 'poi',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#4E4E5E' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'geometry',
-    stylers: [{ color: '#0F1A14' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#4E4E5E' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'geometry',
-    stylers: [{ color: '#16161E' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'geometry.stroke',
-    stylers: [{ color: '#2A2A3A' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#4E4E5E' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'geometry',
-    stylers: [{ color: '#1E1E2A' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'geometry.stroke',
-    stylers: [{ color: '#2A2A3A' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#8E8E99' }],
-  },
-  {
-    featureType: 'transit',
-    elementType: 'geometry',
-    stylers: [{ color: '#16161E' }],
-  },
-  {
-    featureType: 'transit.station',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#4C9EFF' }],
-  },
-  {
-    featureType: 'water',
-    elementType: 'geometry',
-    stylers: [{ color: '#060C14' }],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#2A2A3A' }],
-  },
-];
 
 // -----------------------------------------------------------
 // エリア名ぼかし変換（0.01 度 ≈ 約 1km の概算エリアラベル）

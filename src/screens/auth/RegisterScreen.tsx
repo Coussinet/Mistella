@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import type { AuthStackParamList, UserRole } from '@/types';
@@ -481,13 +482,13 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 76, 106, 0.1)',
+    backgroundColor: withAlpha(COLORS.error, 0.1),
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 76, 106, 0.3)',
+    borderColor: withAlpha(COLORS.error, 0.3),
     gap: 8,
   },
   errorText: {
@@ -515,7 +516,7 @@ const styles = StyleSheet.create({
   },
   roleButtonActive: {
     borderColor: COLORS.gold,
-    backgroundColor: 'rgba(201, 168, 76, 0.08)',
+    backgroundColor: withAlpha(COLORS.gold, 0.08),
   },
   roleButtonText: {
     fontSize: 14,
@@ -530,7 +531,7 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
   roleButtonSubActive: {
-    color: 'rgba(201, 168, 76, 0.7)',
+    color: withAlpha(COLORS.gold, 0.7),
   },
 
   // 入力欄

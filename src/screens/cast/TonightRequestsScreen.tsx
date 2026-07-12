@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '@/components/common/Avatar';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import * as castService from '@/services/castService';
 import { useAuthStore } from '@/store/authStore';
@@ -39,10 +40,10 @@ const REQUEST_STATUS_CONFIG: Record<
   TonightRequestStatus,
   { label: string; color: string; bg: string }
 > = {
-  sent: { label: '未読', color: COLORS.neonBlue, bg: 'rgba(76, 158, 255, 0.15)' },
-  read: { label: '確認済み', color: COLORS.textSecondary, bg: 'rgba(142, 142, 153, 0.12)' },
-  accepted: { label: '承諾', color: COLORS.success, bg: 'rgba(76, 255, 158, 0.15)' },
-  declined: { label: '辞退', color: COLORS.error, bg: 'rgba(255, 76, 106, 0.12)' },
+  sent: { label: '未読', color: COLORS.neonBlue, bg: withAlpha(COLORS.neonBlue, 0.15) },
+  read: { label: '確認済み', color: COLORS.textSecondary, bg: withAlpha(COLORS.textSecondary, 0.12) },
+  accepted: { label: '承諾', color: COLORS.success, bg: withAlpha(COLORS.success, 0.15) },
+  declined: { label: '辞退', color: COLORS.error, bg: withAlpha(COLORS.error, 0.12) },
 };
 
 // -----------------------------------------------------------
@@ -157,7 +158,7 @@ function BroadcastItem({
             <Text style={styles.customerName} numberOfLines={1}>
               {item.customer?.nickname ?? '不明なお客様'}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: 'rgba(201,168,76,0.15)', borderColor: 'rgba(201,168,76,0.4)' }]}>
+            <View style={[styles.statusBadge, { backgroundColor: withAlpha(COLORS.gold, 0.15), borderColor: withAlpha(COLORS.gold, 0.4) }]}>
               <Text style={[styles.statusBadgeText, { color: COLORS.gold }]}>全体投稿</Text>
             </View>
           </View>
@@ -584,7 +585,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   tabItemActive: {
-    backgroundColor: 'rgba(201,168,76,0.12)',
+    backgroundColor: withAlpha(COLORS.gold, 0.12),
   },
   tabText: {
     fontSize: 13,
@@ -707,13 +708,13 @@ const styles = StyleSheet.create({
   reactionBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(201,168,76,0.1)',
-    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(201,168,76,0.3)',
+    backgroundColor: withAlpha(COLORS.gold, 0.1),
+    borderRadius: 10, borderWidth: 1, borderColor: withAlpha(COLORS.gold, 0.3),
     paddingVertical: 5, paddingHorizontal: 10,
   },
   reactionBadgeMessage: {
-    backgroundColor: 'rgba(76,158,255,0.1)',
-    borderColor: 'rgba(76,158,255,0.3)',
+    backgroundColor: withAlpha(COLORS.neonBlue, 0.1),
+    borderColor: withAlpha(COLORS.neonBlue, 0.3),
   },
   reactionBadgeText: { fontSize: 12, fontWeight: '600', color: COLORS.gold },
 

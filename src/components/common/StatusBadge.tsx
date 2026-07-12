@@ -5,6 +5,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import type { WorkStatus } from '@/types';
 
 // -----------------------------------------------------------
@@ -27,27 +28,27 @@ const STATUS_CONFIG: Record<
   working: {
     label: '出勤中',
     color: COLORS.success,
-    bg: 'rgba(76, 255, 158, 0.15)',
+    bg: withAlpha(COLORS.success, 0.15),
   },
   break: {
     label: '休憩中',
-    color: '#FF9F4C',
-    bg: 'rgba(255, 159, 76, 0.15)',
+    color: COLORS.accentWarm,
+    bg: withAlpha(COLORS.accentWarm, 0.15),
   },
   off: {
     label: '退勤',
     color: COLORS.textSecondary,
-    bg: 'rgba(142, 142, 153, 0.15)',
+    bg: withAlpha(COLORS.textSecondary, 0.15),
   },
   matched: {
     label: 'マッチ済み',
     color: COLORS.gold,
-    bg: 'rgba(201, 168, 76, 0.15)',
+    bg: withAlpha(COLORS.gold, 0.15),
   },
   pending: {
     label: '未確認',
     color: COLORS.neonBlue,
-    bg: 'rgba(76, 158, 255, 0.15)',
+    bg: withAlpha(COLORS.neonBlue, 0.15),
   },
 };
 

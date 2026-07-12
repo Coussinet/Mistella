@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { withAlpha } from '@/constants/theme';
 import type { WorkStatus } from '@/types';
 
 // -----------------------------------------------------------
@@ -38,19 +39,19 @@ const STATUS_OPTIONS: StatusOption[] = [
     key: 'working',
     label: '出勤中',
     activeColor: COLORS.success,
-    activeBg: 'rgba(76, 255, 158, 0.15)',
+    activeBg: withAlpha(COLORS.success, 0.15),
   },
   {
     key: 'break',
     label: '休憩中',
-    activeColor: '#FF9F4C',
-    activeBg: 'rgba(255, 159, 76, 0.15)',
+    activeColor: COLORS.accentWarm,
+    activeBg: withAlpha(COLORS.accentWarm, 0.15),
   },
   {
     key: 'off',
     label: '退勤',
     activeColor: COLORS.textSecondary,
-    activeBg: 'rgba(142, 142, 153, 0.12)',
+    activeBg: withAlpha(COLORS.textSecondary, 0.12),
   },
 ];
 

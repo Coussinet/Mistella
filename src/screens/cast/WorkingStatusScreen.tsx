@@ -123,7 +123,7 @@ export default function WorkingStatusScreen({ navigation }: Props) {
     workStatus === 'working'
       ? COLORS.success
       : workStatus === 'break'
-        ? '#FF9F4C'
+        ? COLORS.accentWarm
         : COLORS.textMuted;
 
   return (
