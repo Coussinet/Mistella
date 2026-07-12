@@ -7,15 +7,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -23,13 +21,14 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { supabase } from '@/lib/supabase';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
 import {
-  getMessages,
-  markMessagesAsRead,
-  sendMessage,
-  subscribeToMessages,
-} from '@/services/messageService';
+  useMarkMessagesAsRead,
+  useMessages,
+  useSendMessage,
+} from '@/hooks/queries/useMessages';
 import { useAuthStore } from '@/store/authStore';
 import type {
   CastStackParamList,
@@ -38,7 +37,6 @@ import type {
   User,
 } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
-import { uploadImage } from '@/utils/imageUtils';
 
 type ChatRouteParams = {
   matchId: string;
@@ -103,53 +101,21 @@ export default function ChatScreen() {
     NativeStackNavigationProp<CastStackParamList & CustomerStackParamList>
   >();
   const { matchId, partnerUser } = route.params as ChatRouteParams;
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList<Message>>(null);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  const { data, isPending, isError, error, refetch } = useMessages(matchId);
+  const sendMutation = useSendMessage(matchId);
+  useMarkMessagesAsRead(matchId);
+
+  const messages = data ?? [];
+  const sending = sendMutation.isPending;
 
   useEffect(() => {
     navigation.setOptions({ title: partnerUser.nickname });
   }, [navigation, partnerUser.nickname]);
-
-  const loadMessages = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await getMessages(matchId);
-      setMessages(data);
-      await markMessagesAsRead(matchId, user.id);
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '読み込みに失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  }, [matchId, user]);
-
-  useEffect(() => {
-    loadMessages();
-
-    // Realtime 購読
-    const unsub = subscribeToMessages(matchId, async (msg) => {
-      setMessages((prev) => {
-        // 重複チェック
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-      // 相手のメッセージを既読処理
-      if (user && msg.sender_id !== user.id) {
-        await markMessagesAsRead(matchId, user.id);
-      }
-    });
-    unsubscribeRef.current = unsub;
-
-    return () => {
-      if (unsubscribeRef.current) unsubscribeRef.current();
-    };
-  }, [matchId, user, loadMessages]);
 
   // 新着メッセージが来たら末尾にスクロール
   useEffect(() => {
@@ -160,22 +126,17 @@ export default function ChatScreen() {
     }
   }, [messages.length]);
 
-  const handleSendText = async () => {
-    if (!user || !inputText.trim()) return;
-    setSending(true);
+  const handleSendText = () => {
     const text = inputText.trim();
+    if (!user || !text) return;
     setInputText('');
-    try {
-      const sent = await sendMessage(matchId, user.id, text);
-      setMessages((prev) =>
-        prev.some((m) => m.id === sent.id) ? prev : [...prev, sent],
-      );
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '送信に失敗しました。');
-      setInputText(text);
-    } finally {
-      setSending(false);
-    }
+    sendMutation.mutate(
+      { content: text },
+      {
+        // 失敗時は入力内容を復元する（エラー表示は hook 側で行う）
+        onError: () => setInputText(text),
+      },
+    );
   };
 
   const handleSendImage = async () => {
@@ -186,31 +147,11 @@ export default function ChatScreen() {
     });
     if (result.canceled || result.assets.length === 0) return;
 
-    setSending(true);
-    try {
-      const imageUrl = await uploadImage(
-        result.assets[0].uri,
-        'chat-images',
-        `${matchId}/${user.id}/${Date.now()}.jpg`,
-      );
-      const sent = await sendMessage(matchId, user.id, null, imageUrl);
-      setMessages((prev) =>
-        prev.some((m) => m.id === sent.id) ? prev : [...prev, sent],
-      );
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '画像の送信に失敗しました。');
-    } finally {
-      setSending(false);
-    }
+    sendMutation.mutate({ imageUri: result.assets[0].uri });
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
-      </View>
-    );
-  }
+  if (isPending) return <SkeletonList />;
+  if (isError) return <ErrorView error={error} onRetry={refetch} />;
 
   return (
     <KeyboardAvoidingView
@@ -230,12 +171,10 @@ export default function ChatScreen() {
           />
         )}
         ListEmptyComponent={
-          <View style={styles.emptyChat}>
-            <MaterialIcons name="chat-bubble-outline" size={48} color={COLORS.textMuted} />
-            <Text style={styles.emptyChatText}>
-              最初のメッセージを送ってみましょう！
-            </Text>
-          </View>
+          <EmptyState
+            icon="chat-bubble-outline"
+            title="最初のメッセージを送ってみましょう！"
+          />
         }
         contentContainerStyle={messages.length === 0 ? styles.emptyList : styles.messageList}
         onContentSizeChange={() =>
@@ -285,18 +224,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   messageList: {
     padding: 12,
     paddingBottom: 8,
   },
   emptyList: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   bubbleRow: {
     flexDirection: 'row',
@@ -368,17 +302,6 @@ const styles = StyleSheet.create({
   readStatus: {
     color: COLORS.neonBlue,
     fontSize: 10,
-  },
-  emptyChat: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 120,
-    gap: 12,
-  },
-  emptyChatText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
   },
   inputArea: {
     flexDirection: 'row',

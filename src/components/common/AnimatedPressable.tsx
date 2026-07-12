@@ -40,10 +40,13 @@ export default function AnimatedPressable({
       {...rest}
       style={[style, animatedStyle]}
       onPressIn={(e) => {
+        // reanimated の shared value への代入は正規の使い方（ルールの誤検知）
+        // eslint-disable-next-line react-hooks/immutability
         scale.value = withSpring(pressScale, { damping: 20, stiffness: 300 });
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
+        // eslint-disable-next-line react-hooks/immutability
         scale.value = withSpring(1, { damping: 20, stiffness: 300 });
         onPressOut?.(e);
       }}

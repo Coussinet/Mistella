@@ -3,7 +3,6 @@
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -18,22 +17,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
-import {
-  getTimelines,
-  createTimeline,
-  deleteTimeline,
-} from '@/services/timelineService';
-import { useAuthStore } from '@/store/authStore';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import TimelineItem from '@/components/timeline/TimelineItem';
 import TimelinePostForm from '@/components/timeline/TimelinePostForm';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
+import {
+  useCreateTimeline,
+  useDeleteTimeline,
+  useTimelines,
+  useTimelinesRealtime,
+} from '@/hooks/queries/useTimelines';
+import { useAuthStore } from '@/store/authStore';
 import type { CustomerStackParamList, Timeline } from '@/types';
-
-// -----------------------------------------------------------
-// 定数
-// -----------------------------------------------------------
-
-const PAGE_SIZE = 20;
+import { showError } from '@/utils/showError';
 
 // -----------------------------------------------------------
 // CustomerHomeScreen
@@ -43,7 +41,6 @@ type NavProp = NativeStackNavigationProp<CustomerStackParamList>;
 
 export default function CustomerHomeScreen() {
   const navigation = useNavigation<NavProp>();
-  const queryClient = useQueryClient();
   const { profile } = useAuthStore();
 
   const [postFormVisible, setPostFormVisible] = useState(false);
@@ -57,17 +54,14 @@ export default function CustomerHomeScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
+    isPending,
+    isError,
+    error,
     isRefetching,
     refetch,
-  } = useInfiniteQuery({
-    queryKey: ['timelines'],
-    queryFn: ({ pageParam }) =>
-      getTimelines(pageParam as number, PAGE_SIZE),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.length === PAGE_SIZE ? allPages.length : undefined,
-  });
+  } = useTimelines();
+  // 新着投稿をリアルタイムで先頭に反映（キャスト側ホームと同挙動）
+  useTimelinesRealtime();
 
   const timelines = useMemo(
     () => data?.pages.flat() ?? [],
@@ -78,25 +72,7 @@ export default function CustomerHomeScreen() {
   // 投稿
   // -----------------------------------------------------------
 
-  const postMutation = useMutation({
-    mutationFn: async ({
-      content,
-      mediaUri,
-      mediaType,
-    }: {
-      content: string;
-      mediaUri?: string;
-      mediaType?: 'image' | 'video';
-    }) => {
-      if (!profile?.id) throw new Error('未ログイン');
-      // メディアアップロードは省略（実装時は imageUtils 等を使用）
-      return createTimeline(profile.id, content || null, mediaUri ?? null, mediaType ?? null);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timelines'] });
-      setPostFormVisible(false);
-    },
-  });
+  const postMutation = useCreateTimeline();
 
   const handlePost = useCallback(
     async (
@@ -104,7 +80,16 @@ export default function CustomerHomeScreen() {
       mediaUri?: string,
       mediaType?: 'image' | 'video',
     ) => {
-      await postMutation.mutateAsync({ content, mediaUri, mediaType });
+      try {
+        await postMutation.mutateAsync({
+          content: content || null,
+          mediaUri,
+          mediaType,
+        });
+        setPostFormVisible(false);
+      } catch (e: unknown) {
+        showError(e, '投稿に失敗しました。');
+      }
     },
     [postMutation],
   );
@@ -113,12 +98,7 @@ export default function CustomerHomeScreen() {
   // 削除
   // -----------------------------------------------------------
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteTimeline,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timelines'] });
-    },
-  });
+  const deleteMutation = useDeleteTimeline();
 
   // -----------------------------------------------------------
   // レンダー
@@ -149,21 +129,28 @@ export default function CustomerHomeScreen() {
     return <LoadingSpinner />;
   };
 
-  const renderEmpty = () => {
-    if (isLoading) return null;
-    return (
-      <View style={styles.emptyContainer}>
-        <MaterialIcons name="dynamic-feed" size={48} color={COLORS.textMuted} />
-        <Text style={styles.emptyText}>まだ投稿がありません</Text>
-        <Text style={styles.emptySubText}>
-          キャストの投稿がここに表示されます
-        </Text>
-      </View>
-    );
-  };
+  const renderEmpty = () => (
+    <EmptyState
+      icon="dynamic-feed"
+      title="まだ投稿がありません"
+      description="キャストの投稿がここに表示されます"
+    />
+  );
 
-  if (isLoading) {
-    return <LoadingSpinner fullScreen message="タイムラインを読み込み中..." />;
+  if (isPending) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <SkeletonList />
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ErrorView error={error} onRetry={refetch} />
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -193,7 +180,9 @@ export default function CustomerHomeScreen() {
         renderItem={renderItem}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={
+          timelines.length === 0 ? styles.emptyList : styles.listContent
+        }
         showsVerticalScrollIndicator={false}
         onEndReached={() => {
           if (hasNextPage && !isFetchingNextPage) {
@@ -282,24 +271,9 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 32,
   },
-
-  // 空状態
-  emptyContainer: {
-    alignItems: 'center',
+  emptyList: {
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyText: {
-    color: COLORS.textSecondary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  emptySubText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingHorizontal: 32,
   },
 
   // 投稿モーダル

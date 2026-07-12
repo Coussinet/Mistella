@@ -5,6 +5,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Message } from '@/types';
 import { sendPushNotification } from '@/services/notificationService';
+import { uploadImage } from '@/utils/imageUtils';
 
 const DEFAULT_PAGE_SIZE = 30;
 
@@ -84,6 +85,27 @@ export async function sendMessage(
     .catch(() => {});
 
   return data as Message;
+}
+
+// -----------------------------------------------------------
+// 画像メッセージ送信
+// -----------------------------------------------------------
+
+/**
+ * 端末内の画像を Storage（chat-images バケット）にアップロードし、
+ * その URL を持つメッセージを送信する。
+ */
+export async function sendImageMessage(
+  matchId: string,
+  senderId: string,
+  localUri: string,
+): Promise<Message> {
+  const imageUrl = await uploadImage(
+    localUri,
+    'chat-images',
+    `${matchId}/${senderId}/${Date.now()}.jpg`,
+  );
+  return sendMessage(matchId, senderId, null, imageUrl);
 }
 
 // -----------------------------------------------------------

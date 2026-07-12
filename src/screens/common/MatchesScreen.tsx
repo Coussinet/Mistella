@@ -5,10 +5,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   StyleSheet,
@@ -17,7 +15,10 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { getMatches } from '@/services/matchService';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
+import { useMatches } from '@/hooks/queries/useMatches';
 import { useAuthStore } from '@/store/authStore';
 import type {
   CastStackParamList,
@@ -74,48 +75,20 @@ function MatchItem({ match, myUserId, onPress }: MatchItemProps) {
 // -----------------------------------------------------------
 
 export default function MatchesScreen() {
-  const { user, profile } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const navigation = useNavigation<
     NativeStackNavigationProp<CastStackParamList & CustomerStackParamList>
   >();
 
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const loadMatches = useCallback(async () => {
-    if (!user || !profile) return;
-    try {
-      const data = await getMatches(user.id, profile.role);
-      setMatches(data);
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '読み込みに失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  }, [user, profile]);
-
-  useEffect(() => {
-    loadMatches();
-  }, [loadMatches]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadMatches();
-    setRefreshing(false);
-  };
+  const { data: matches, isPending, isError, error, refetch, isRefetching } =
+    useMatches();
 
   const handlePress = (match: Match, partner: User) => {
     navigation.navigate('ChatRoom', { matchId: match.id, partnerUser: partner });
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
-      </View>
-    );
-  }
+  if (isPending) return <SkeletonList />;
+  if (isError) return <ErrorView error={error} onRetry={refetch} />;
 
   return (
     <View style={styles.container}>
@@ -129,17 +102,15 @@ export default function MatchesScreen() {
             onPress={handlePress}
           />
         )}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
+        onRefresh={refetch}
+        refreshing={isRefetching}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="favorite-border" size={64} color={COLORS.textMuted} />
-            <Text style={styles.emptyTitle}>まだマッチがありません</Text>
-            <Text style={styles.emptySubtitle}>
-              気になるユーザーにいいねしてみましょう！
-            </Text>
-          </View>
+          <EmptyState
+            icon="favorite-border"
+            title="まだマッチがありません"
+            description="気になるユーザーにいいねしてみましょう！"
+          />
         }
         contentContainerStyle={
           matches.length === 0 ? styles.emptyList : styles.listContent
@@ -158,17 +129,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   listContent: {
     paddingVertical: 8,
   },
   emptyList: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   item: {
     flexDirection: 'row',
@@ -205,24 +171,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.border,
     marginLeft: 80,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 120,
-    gap: 12,
-  },
-  emptyTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  emptySubtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-    lineHeight: 19,
   },
 });

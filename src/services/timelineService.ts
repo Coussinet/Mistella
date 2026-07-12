@@ -4,6 +4,7 @@
 
 import { supabase } from '@/lib/supabase';
 import type { Timeline } from '@/types';
+import { compressImage } from '@/utils/imageUtils';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -48,6 +49,54 @@ export async function getMyTimelines(userId: string): Promise<Timeline[]> {
 
   if (error) throw error;
   return (data ?? []) as Timeline[];
+}
+
+// -----------------------------------------------------------
+// 単一取得
+// -----------------------------------------------------------
+
+/** 指定 ID のタイムラインを（ユーザー情報 JOIN 付きで）取得する。見つからなければ null。 */
+export async function getTimelineById(id: string): Promise<Timeline | null> {
+  const { data, error } = await supabase
+    .from('timelines')
+    .select('*, user:users(*)')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as Timeline | null) ?? null;
+}
+
+// -----------------------------------------------------------
+// メディアアップロード
+// -----------------------------------------------------------
+
+/**
+ * タイムライン用のメディアを Supabase Storage にアップロードし、
+ * パブリック URL を返す。画像は圧縮してから JPEG でアップロードする。
+ */
+export async function uploadTimelineMedia(
+  userId: string,
+  localUri: string,
+  mediaType: 'image' | 'video',
+): Promise<string> {
+  const isImage = mediaType === 'image';
+  const sourceUri = isImage ? await compressImage(localUri) : localUri;
+
+  const response = await fetch(sourceUri);
+  const arrayBuffer = await response.arrayBuffer();
+
+  const ext = isImage ? 'jpg' : 'mp4';
+  const contentType = isImage ? 'image/jpeg' : 'video/mp4';
+  const path = `timelines/${userId}/${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('media')
+    .upload(path, arrayBuffer, { contentType, upsert: true });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from('media').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 // -----------------------------------------------------------

@@ -6,10 +6,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -24,15 +23,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
-import { supabase } from '@/lib/supabase';
-import { createTimeline, getTimelines } from '@/services/timelineService';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
+import {
+  useCreateTimeline,
+  useTimelines,
+  useTimelinesRealtime,
+} from '@/hooks/queries/useTimelines';
 import { useAuthStore } from '@/store/authStore';
 import type { CastStackParamList, Timeline } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
-import { compressImage } from '@/utils/imageUtils';
+import { showError } from '@/utils/showError';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PAGE_SIZE = 20;
 
 // -----------------------------------------------------------
 // タイムスタンプ：何時間後に消えるか
@@ -109,15 +113,15 @@ function TimelineItem({ item, onAvatarPress }: TimelineItemProps) {
 type PostModalProps = {
   visible: boolean;
   onClose: () => void;
-  onPosted: (item: Timeline) => void;
 };
 
-function PostModal({ visible, onClose, onPosted }: PostModalProps) {
+function PostModal({ visible, onClose }: PostModalProps) {
   const { user } = useAuthStore();
   const [text, setText] = useState('');
   const [mediaUri, setMediaUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [posting, setPosting] = useState(false);
+  const createMutation = useCreateTimeline();
+  const posting = createMutation.isPending;
 
   const reset = () => {
     setText('');
@@ -149,7 +153,7 @@ function PostModal({ visible, onClose, onPosted }: PostModalProps) {
     if (!result.canceled && result.assets.length > 0) {
       const duration = result.assets[0].duration ?? 0;
       if (duration > 3000) {
-        Alert.alert('エラー', '動画は3秒以内にしてください。');
+        showError('動画は3秒以内にしてください。');
         return;
       }
       setMediaUri(result.assets[0].uri);
@@ -160,52 +164,19 @@ function PostModal({ visible, onClose, onPosted }: PostModalProps) {
   const handlePost = async () => {
     if (!user) return;
     if (!text.trim() && !mediaUri) {
-      Alert.alert('エラー', 'テキストまたはメディアを入力してください。');
+      showError('テキストまたはメディアを入力してください。');
       return;
     }
-    setPosting(true);
     try {
-      let uploadedUrl: string | null = null;
-      let finalMediaType: 'image' | 'video' | null = null;
-
-      if (mediaUri && mediaType === 'image') {
-        const compressed = await compressImage(mediaUri);
-        const response = await fetch(compressed);
-        const arrayBuffer = await response.arrayBuffer();
-        const path = `timelines/${user.id}/${Date.now()}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(path, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('media').getPublicUrl(path);
-        uploadedUrl = data.publicUrl;
-        finalMediaType = 'image';
-      } else if (mediaUri && mediaType === 'video') {
-        const response = await fetch(mediaUri);
-        const arrayBuffer = await response.arrayBuffer();
-        const path = `timelines/${user.id}/${Date.now()}.mp4`;
-        const { error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(path, arrayBuffer, { contentType: 'video/mp4', upsert: true });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('media').getPublicUrl(path);
-        uploadedUrl = data.publicUrl;
-        finalMediaType = 'video';
-      }
-
-      const created = await createTimeline(
-        user.id,
-        text.trim() || null,
-        uploadedUrl,
-        finalMediaType,
-      );
-      onPosted(created);
+      await createMutation.mutateAsync({
+        content: text.trim() || null,
+        mediaUri,
+        mediaType,
+      });
       reset();
       onClose();
     } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '投稿に失敗しました。');
-    } finally {
-      setPosting(false);
+      showError(e, '投稿に失敗しました。');
     }
   };
 
@@ -291,94 +262,48 @@ type NavProp = NativeStackNavigationProp<CastStackParamList>;
 
 export default function TimelineScreen() {
   const navigation = useNavigation<NavProp>();
-  const [timelines, setTimelines] = useState<Timeline[]>([]);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const loadPage = useCallback(async (pageNum: number, replace: boolean) => {
-    if (loading) return;
-    setLoading(true);
-    try {
-      const data = await getTimelines(pageNum, PAGE_SIZE);
-      setTimelines((prev) => (replace ? data : [...prev, ...data]));
-      setHasMore(data.length === PAGE_SIZE);
-      setPage(pageNum);
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '読み込みに失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  }, [loading]);
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTimelines();
+  useTimelinesRealtime();
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      const data = await getTimelines(0, PAGE_SIZE);
-      setTimelines(data);
-      setHasMore(data.length === PAGE_SIZE);
-      setPage(0);
-    } catch {
-      // silent
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    loadPage(0, true);
-
-    // Realtime 購読
-    const channel = supabase
-      .channel('timelines-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'timelines' },
-        async (payload) => {
-          const { data } = await supabase
-            .from('timelines')
-            .select('*, user:users(*)')
-            .eq('id', (payload.new as Timeline).id)
-            .single();
-          if (data) {
-            setTimelines((prev) => [data as Timeline, ...prev]);
-          }
-        },
-      )
-      .subscribe();
-    channelRef.current = channel;
-
-    return () => {
-      if (channelRef.current) supabase.removeChannel(channelRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const timelines = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
-      loadPage(page + 1, false);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
   };
 
-  const handlePosted = (item: Timeline) => {
-    setTimelines((prev) => [item, ...prev]);
-  };
+  if (isPending) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <SkeletonList />
+      </SafeAreaView>
+    );
+  }
 
-  const listEmpty = (
-    <View style={styles.emptyContainer}>
-      <MaterialIcons name="dynamic-feed" size={64} color={COLORS.textMuted} />
-      <Text style={styles.emptyTitle}>まだ投稿がありません</Text>
-      <Text style={styles.emptySubtitle}>最初の投稿をしてみましょう！</Text>
-    </View>
-  );
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ErrorView error={error} onRetry={refetch} />
+      </SafeAreaView>
+    );
+  }
 
-  const listFooter =
-    loading && timelines.length > 0 ? (
-      <ActivityIndicator style={{ margin: 16 }} color={COLORS.gold} />
-    ) : null;
+  const listFooter = isFetchingNextPage ? (
+    <ActivityIndicator style={{ margin: 16 }} color={COLORS.gold} />
+  ) : null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -397,9 +322,15 @@ export default function TimelineScreen() {
         )}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.3}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
-        ListEmptyComponent={loading ? null : listEmpty}
+        onRefresh={refetch}
+        refreshing={isRefetching && !isFetchingNextPage}
+        ListEmptyComponent={
+          <EmptyState
+            icon="dynamic-feed"
+            title="まだ投稿がありません"
+            description="最初の投稿をしてみましょう！"
+          />
+        }
         ListFooterComponent={listFooter}
         contentContainerStyle={timelines.length === 0 ? styles.emptyList : styles.listContent}
       />
@@ -416,7 +347,6 @@ export default function TimelineScreen() {
       <PostModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onPosted={handlePosted}
       />
     </SafeAreaView>
   );
@@ -437,6 +367,7 @@ const styles = StyleSheet.create({
   },
   emptyList: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: COLORS.surface,
@@ -508,23 +439,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 12,
     marginTop: 4,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 100,
-  },
-  emptyTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    marginTop: 8,
   },
   fab: {
     position: 'absolute',
