@@ -60,7 +60,8 @@ const Stack = createNativeStackNavigator<AppStacks>();
 function CommonScreens({ role }: { role: UserRole }) {
   return (
     <Stack.Group>
-      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
+      {/* ヒーロー写真を画面最上部まで届かせるため透過ヘッダー（ボタン類は画面側で設定） */}
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: '', headerTransparent: true }} />
       <Stack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
       <Stack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
       <Stack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />

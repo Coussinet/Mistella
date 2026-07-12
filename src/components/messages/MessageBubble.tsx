@@ -1,5 +1,7 @@
 // ============================================================
 // Mistella - メッセージバブルコンポーネント
+// - グルーピング（同一送信者・5分以内）に応じた連結角丸
+// - optimistic 送信中（id が temp- 始まり）の視覚化
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
@@ -13,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { withAlpha } from '@/constants/theme';
+import { RADIUS, SPACING, withAlpha } from '@/constants/theme';
 import type { Message } from '@/types';
 import Avatar from '@/components/common/Avatar';
 
@@ -21,12 +23,21 @@ import Avatar from '@/components/common/Avatar';
 // Props
 // -----------------------------------------------------------
 
+/** 連続メッセージ内での位置（角丸・アバター・時刻表示の制御に使用） */
+export type BubbleGroupPosition = 'single' | 'first' | 'middle' | 'last';
+
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   senderAvatar?: string | null;
   senderNickname?: string;
+  /** グループ内位置（省略時は単独メッセージ扱い） */
+  groupPosition?: BubbleGroupPosition;
 }
+
+const AVATAR_SIZE = 32;
+/** グループ内で連結する側の角丸 */
+const LINKED_RADIUS = 4;
 
 // -----------------------------------------------------------
 // 時刻フォーマット（HH:MM）
@@ -48,26 +59,56 @@ export default function MessageBubble({
   isOwn,
   senderAvatar,
   senderNickname,
+  groupPosition = 'single',
 }: MessageBubbleProps) {
   const [lightboxVisible, setLightboxVisible] = useState(false);
 
+  // optimistic 送信中（useSendMessage が temp- で始まる仮 id を振る）
+  const isSending = message.id.startsWith('temp-');
+
+  // グループ末尾（または単独）でのみアバター・時刻を表示する
+  const isGroupEnd = groupPosition === 'single' || groupPosition === 'last';
+  const showAvatar = !isOwn && isGroupEnd;
+  const showMeta = isGroupEnd || isSending;
+  // 直前が同一グループなら詰めて表示する
+  const isLinkedToPrev = groupPosition === 'middle' || groupPosition === 'last';
+
+  // 連結形状: グループ内で隣接する側の角丸を小さくする
+  // （末尾のしっぽは既存デザインを踏襲して常に小さいまま）
+  const linkedCornerStyle = isLinkedToPrev
+    ? isOwn
+      ? styles.linkedTopRight
+      : styles.linkedTopLeft
+    : null;
+
   return (
-    <View style={[styles.row, isOwn ? styles.rowOwn : styles.rowOther]}>
-      {/* 相手側のアバター */}
+    <View
+      style={[
+        styles.row,
+        isOwn ? styles.rowOwn : styles.rowOther,
+        isLinkedToPrev ? styles.rowLinked : null,
+      ]}
+    >
+      {/* 相手側のアバター（グループ末尾のみ表示、それ以外は位置合わせ用スペーサー） */}
       {!isOwn ? (
-        <View style={styles.avatarWrapper}>
-          <Avatar
-            uri={senderAvatar ?? null}
-            size={32}
-            nickname={senderNickname}
-          />
-        </View>
+        showAvatar ? (
+          <View style={styles.avatarWrapper}>
+            <Avatar
+              uri={senderAvatar ?? null}
+              size={AVATAR_SIZE}
+              nickname={senderNickname}
+            />
+          </View>
+        ) : (
+          <View style={styles.avatarSpacer} />
+        )
       ) : null}
 
       <View
         style={[
           styles.bubbleWrapper,
           isOwn ? styles.bubbleWrapperOwn : styles.bubbleWrapperOther,
+          isSending ? styles.bubbleWrapperSending : null,
         ]}
       >
         {/* 画像メッセージ */}
@@ -76,12 +117,14 @@ export default function MessageBubble({
             <TouchableOpacity
               onPress={() => setLightboxVisible(true)}
               activeOpacity={0.9}
+              disabled={isSending}
             >
               <Image
                 source={{ uri: message.image_url }}
                 style={[
                   styles.imageMessage,
                   isOwn ? styles.imageOwn : styles.imageOther,
+                  linkedCornerStyle,
                 ]}
                 resizeMode="cover"
               />
@@ -121,6 +164,7 @@ export default function MessageBubble({
             style={[
               styles.bubble,
               isOwn ? styles.bubbleOwn : styles.bubbleOther,
+              linkedCornerStyle,
             ]}
           >
             <Text
@@ -134,23 +178,38 @@ export default function MessageBubble({
           </View>
         ) : null}
 
-        {/* フッター: 時刻 + 既読 */}
-        <View
-          style={[
-            styles.metaRow,
-            isOwn ? styles.metaRowOwn : styles.metaRowOther,
-          ]}
-        >
-          <Text style={styles.time}>{formatTime(message.created_at)}</Text>
-          {isOwn ? (
-            <MaterialIcons
-              name={message.is_read ? 'done-all' : 'done'}
-              size={12}
-              color={message.is_read ? COLORS.neonBlue : COLORS.textMuted}
-              style={styles.readIcon}
-            />
-          ) : null}
-        </View>
+        {/* フッター: 送信中 or 時刻 + 既読 */}
+        {showMeta ? (
+          <View
+            style={[
+              styles.metaRow,
+              isOwn ? styles.metaRowOwn : styles.metaRowOther,
+            ]}
+          >
+            {isSending ? (
+              <>
+                <MaterialIcons
+                  name="schedule"
+                  size={11}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.sendingText}>送信中</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.time}>{formatTime(message.created_at)}</Text>
+                {isOwn ? (
+                  <MaterialIcons
+                    name={message.is_read ? 'done-all' : 'done'}
+                    size={12}
+                    color={message.is_read ? COLORS.neonBlue : COLORS.textMuted}
+                    style={styles.readIcon}
+                  />
+                ) : null}
+              </>
+            )}
+          </View>
+        ) : null}
       </View>
 
       {/* 自分側のスペーサー（アバターの代わり） */}
@@ -167,9 +226,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginVertical: 4,
-    paddingHorizontal: 12,
-    gap: 8,
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  rowLinked: {
+    // 同一グループ内は詰めて連結感を出す
+    marginTop: 2,
   },
   rowOwn: {
     justifyContent: 'flex-end',
@@ -178,10 +241,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarWrapper: {
-    marginBottom: 4,
+    marginBottom: SPACING.xxs,
+  },
+  avatarSpacer: {
+    width: AVATAR_SIZE,
   },
   ownSpacer: {
-    width: 32,
+    width: AVATAR_SIZE,
   },
   bubbleWrapper: {
     maxWidth: '72%',
@@ -193,6 +259,9 @@ const styles = StyleSheet.create({
   bubbleWrapperOther: {
     alignItems: 'flex-start',
   },
+  bubbleWrapperSending: {
+    opacity: 0.55,
+  },
   bubble: {
     borderRadius: 18,
     paddingVertical: 10,
@@ -200,16 +269,22 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   bubbleOwn: {
-    backgroundColor: withAlpha(COLORS.gold, 0.18), // COLORS.gold 30% opacity
-    borderBottomRightRadius: 4,
+    backgroundColor: withAlpha(COLORS.gold, 0.18),
+    borderBottomRightRadius: LINKED_RADIUS,
     borderWidth: 1,
     borderColor: withAlpha(COLORS.gold, 0.35),
   },
   bubbleOther: {
     backgroundColor: COLORS.surface,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: LINKED_RADIUS,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  linkedTopRight: {
+    borderTopRightRadius: LINKED_RADIUS,
+  },
+  linkedTopLeft: {
+    borderTopLeftRadius: LINKED_RADIUS,
   },
   bubbleText: {
     fontSize: 14,
@@ -228,10 +303,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceLight,
   },
   imageOwn: {
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: LINKED_RADIUS,
   },
   imageOther: {
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: LINKED_RADIUS,
   },
   metaRow: {
     flexDirection: 'row',
@@ -247,6 +322,10 @@ const styles = StyleSheet.create({
   },
   time: {
     color: COLORS.textMuted,
+    fontSize: 10,
+  },
+  sendingText: {
+    color: COLORS.textSecondary,
     fontSize: 10,
   },
   readIcon: {
@@ -268,7 +347,7 @@ const styles = StyleSheet.create({
     top: 52,
     right: 20,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
+    borderRadius: RADIUS.xl,
     padding: 6,
   },
 });

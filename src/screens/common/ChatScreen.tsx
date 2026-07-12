@@ -1,17 +1,19 @@
 // ============================================================
 // Mistella - ChatScreen（共通）
+// - メッセージグルーピング（同一送信者・5分以内）
+// - 日付セパレータ（今日 / 昨日 / M月D日）
+// - expo-blur 入力バー + reanimated 送信ボタン
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { BlurView } from 'expo-blur';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -20,10 +22,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
+import MessageBubble from '@/components/messages/MessageBubble';
+import type { BubbleGroupPosition } from '@/components/messages/MessageBubble';
 import {
   useMarkMessagesAsRead,
   useMessages,
@@ -36,7 +46,7 @@ import type {
   Message,
   User,
 } from '@/types';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { tapLight } from '@/utils/haptics';
 
 type ChatRouteParams = {
   matchId: string;
@@ -44,49 +54,101 @@ type ChatRouteParams = {
 };
 
 // -----------------------------------------------------------
-// メッセージバブル
+// リスト項目（メッセージ + 日付セパレータ）
 // -----------------------------------------------------------
-type BubbleProps = {
-  message: Message;
-  isMe: boolean;
-  partnerAvatar: string | null;
-};
 
-function MessageBubble({ message, isMe, partnerAvatar }: BubbleProps) {
+type ChatListItem =
+  | { type: 'date'; id: string; label: string }
+  | {
+      type: 'message';
+      id: string;
+      message: Message;
+      groupPosition: BubbleGroupPosition;
+    };
+
+/** 同一グループとみなす送信間隔（5分） */
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
+const SEND_BUTTON_SIZE = 40;
+
+function isSameDay(a: Date, b: Date): boolean {
   return (
-    <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowOther]}>
-      {!isMe && (
-        partnerAvatar ? (
-          <Image source={{ uri: partnerAvatar }} style={styles.bubbleAvatar} />
-        ) : (
-          <View style={[styles.bubbleAvatar, styles.bubbleAvatarFallback]}>
-            <MaterialIcons name="person" size={14} color={COLORS.textMuted} />
-          </View>
-        )
-      )}
-      <View style={styles.bubbleContent}>
-        {message.image_url ? (
-          <Image
-            source={{ uri: message.image_url }}
-            style={[styles.bubbleImage, isMe ? styles.bubbleMe : styles.bubbleOther]}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-            <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextOther]}>
-              {message.content}
-            </Text>
-          </View>
-        )}
-        <Text style={[styles.bubbleTime, isMe ? styles.bubbleTimeMe : styles.bubbleTimeOther]}>
-          {formatRelativeTime(message.created_at)}
-          {isMe && (
-            <Text style={styles.readStatus}>
-              {' '}{message.is_read ? '既読' : '未読'}
-            </Text>
-          )}
-        </Text>
-      </View>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/** 日付セパレータのラベル（今日 / 昨日 / M月D日） */
+function formatDateLabel(dateString: string): string {
+  const d = new Date(dateString);
+  const now = new Date();
+  const startOfDay = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round(
+    (startOfDay(now) - startOfDay(d)) / (24 * 60 * 60 * 1000),
+  );
+  if (diffDays === 0) return '今日';
+  if (diffDays === 1) return '昨日';
+  if (d.getFullYear() !== now.getFullYear()) {
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+/** 2つのメッセージを同一グループ（連続表示）にできるか */
+function isGrouped(a: Message, b: Message): boolean {
+  if (a.sender_id !== b.sender_id) return false;
+  const ta = new Date(a.created_at);
+  const tb = new Date(b.created_at);
+  if (!isSameDay(ta, tb)) return false;
+  return Math.abs(tb.getTime() - ta.getTime()) <= GROUP_WINDOW_MS;
+}
+
+/** メッセージ配列を日付セパレータ入りのリスト項目へ変換する */
+function buildListItems(messages: Message[]): ChatListItem[] {
+  const items: ChatListItem[] = [];
+
+  messages.forEach((message, index) => {
+    const prev = index > 0 ? messages[index - 1] : null;
+    const next = index < messages.length - 1 ? messages[index + 1] : null;
+
+    // 日付が変わる位置にセパレータを挿入
+    const current = new Date(message.created_at);
+    if (!prev || !isSameDay(new Date(prev.created_at), current)) {
+      items.push({
+        type: 'date',
+        id: `date-${current.getFullYear()}-${current.getMonth()}-${current.getDate()}`,
+        label: formatDateLabel(message.created_at),
+      });
+    }
+
+    const linkedPrev = !!prev && isGrouped(prev, message);
+    const linkedNext = !!next && isGrouped(message, next);
+    const groupPosition: BubbleGroupPosition =
+      linkedPrev && linkedNext
+        ? 'middle'
+        : linkedPrev
+          ? 'last'
+          : linkedNext
+            ? 'first'
+            : 'single';
+
+    items.push({ type: 'message', id: message.id, message, groupPosition });
+  });
+
+  return items;
+}
+
+// -----------------------------------------------------------
+// 日付セパレータ
+// -----------------------------------------------------------
+
+function DateSeparator({ label }: { label: string }) {
+  return (
+    <View style={styles.dateSeparator}>
+      <View style={styles.dateSeparatorLine} />
+      <Text style={styles.dateSeparatorText}>{label}</Text>
+      <View style={styles.dateSeparatorLine} />
     </View>
   );
 }
@@ -104,14 +166,35 @@ export default function ChatScreen() {
   const user = useAuthStore((s) => s.user);
 
   const [inputText, setInputText] = useState('');
-  const flatListRef = useRef<FlatList<Message>>(null);
+  const [inputBarHeight, setInputBarHeight] = useState(64);
+  const flatListRef = useRef<FlatList<ChatListItem>>(null);
 
   const { data, isPending, isError, error, refetch } = useMessages(matchId);
   const sendMutation = useSendMessage(matchId);
   useMarkMessagesAsRead(matchId);
 
-  const messages = data ?? [];
+  const messages = useMemo(() => data ?? [], [data]);
+  const listItems = useMemo(() => buildListItems(messages), [messages]);
   const sending = sendMutation.isPending;
+  const hasText = inputText.trim().length > 0;
+
+  // 送信ボタンの出現アニメーション（テキスト入力があるときだけスプリングで表示）
+  const sendProgress = useSharedValue(0);
+  useEffect(() => {
+    sendProgress.value = withSpring(hasText ? 1 : 0, {
+      damping: 15,
+      stiffness: 260,
+    });
+  }, [hasText, sendProgress]);
+
+  const sendButtonAnimatedStyle = useAnimatedStyle(() => {
+    const p = sendProgress.value;
+    return {
+      width: Math.max(0, p) * SEND_BUTTON_SIZE,
+      opacity: Math.min(1, Math.max(0, p)),
+      transform: [{ scale: Math.max(0, p) }],
+    };
+  });
 
   useEffect(() => {
     navigation.setOptions({
@@ -142,6 +225,7 @@ export default function ChatScreen() {
   const handleSendText = () => {
     const text = inputText.trim();
     if (!user || !text) return;
+    tapLight();
     setInputText('');
     sendMutation.mutate(
       { content: text },
@@ -160,11 +244,47 @@ export default function ChatScreen() {
     });
     if (result.canceled || result.assets.length === 0) return;
 
+    tapLight();
     sendMutation.mutate({ imageUri: result.assets[0].uri });
   };
 
   if (isPending) return <SkeletonList />;
   if (isError) return <ErrorView error={error} onRetry={refetch} />;
+
+  const inputBarInner = (
+    <View style={styles.inputRow}>
+      <TouchableOpacity
+        style={styles.imageButton}
+        onPress={handleSendImage}
+        disabled={sending}
+        accessibilityLabel="画像を送信"
+      >
+        <MaterialIcons name="image" size={24} color={COLORS.neonBlue} />
+      </TouchableOpacity>
+
+      <TextInput
+        style={styles.textInput}
+        value={inputText}
+        onChangeText={setInputText}
+        placeholder="メッセージを入力..."
+        placeholderTextColor={COLORS.textMuted}
+        multiline
+        maxLength={1000}
+        returnKeyType="default"
+      />
+
+      <Animated.View style={[styles.sendButtonSlot, sendButtonAnimatedStyle]}>
+        <TouchableOpacity
+          style={[styles.sendButton, sending && styles.sendButtonDisabled]}
+          onPress={handleSendText}
+          disabled={!hasText || sending}
+          accessibilityLabel="送信"
+        >
+          <MaterialIcons name="send" size={18} color={COLORS.background} />
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -174,55 +294,49 @@ export default function ChatScreen() {
     >
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={listItems}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MessageBubble
-            message={item}
-            isMe={item.sender_id === user?.id}
-            partnerAvatar={partnerUser.avatar_url}
-          />
-        )}
+        renderItem={({ item }) =>
+          item.type === 'date' ? (
+            <DateSeparator label={item.label} />
+          ) : (
+            <MessageBubble
+              message={item.message}
+              isOwn={item.message.sender_id === user?.id}
+              senderAvatar={partnerUser.avatar_url}
+              senderNickname={partnerUser.nickname}
+              groupPosition={item.groupPosition}
+            />
+          )
+        }
         ListEmptyComponent={
           <EmptyState
             icon="chat-bubble-outline"
             title="最初のメッセージを送ってみましょう！"
           />
         }
-        contentContainerStyle={messages.length === 0 ? styles.emptyList : styles.messageList}
+        contentContainerStyle={[
+          listItems.length === 0 ? styles.emptyList : styles.messageList,
+          // 絶対配置の入力バーの背後に隠れないよう余白を確保
+          { paddingBottom: inputBarHeight + SPACING.xs },
+        ]}
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({ animated: false })
         }
       />
 
-      {/* 入力エリア */}
-      <View style={styles.inputArea}>
-        <TouchableOpacity style={styles.imageButton} onPress={handleSendImage} disabled={sending}>
-          <MaterialIcons name="image" size={24} color={COLORS.neonBlue} />
-        </TouchableOpacity>
-
-        <TextInput
-          style={styles.textInput}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="メッセージを入力..."
-          placeholderTextColor={COLORS.textMuted}
-          multiline
-          maxLength={1000}
-          returnKeyType="default"
-        />
-
-        <TouchableOpacity
-          style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
-          onPress={handleSendText}
-          disabled={!inputText.trim() || sending}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color={COLORS.background} />
-          ) : (
-            <MaterialIcons name="send" size={20} color={COLORS.background} />
-          )}
-        </TouchableOpacity>
+      {/* 入力バー（メッセージがブラーの背後を流れるよう絶対配置） */}
+      <View
+        style={styles.inputBarContainer}
+        onLayout={(e) => setInputBarHeight(e.nativeEvent.layout.height)}
+      >
+        {Platform.OS === 'ios' ? (
+          <BlurView intensity={40} tint="dark" style={styles.inputBarBlur}>
+            <View style={styles.inputBarGlass}>{inputBarInner}</View>
+          </BlurView>
+        ) : (
+          <View style={styles.inputBarSolid}>{inputBarInner}</View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -238,116 +352,87 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   messageList: {
-    padding: 12,
-    paddingBottom: 8,
+    paddingVertical: SPACING.sm,
   },
   emptyList: {
     flexGrow: 1,
     justifyContent: 'center',
   },
-  bubbleRow: {
+  // ---- 日付セパレータ ----------------------------------------
+  dateSeparator: {
     flexDirection: 'row',
-    marginVertical: 4,
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  bubbleRowMe: {
-    justifyContent: 'flex-end',
-  },
-  bubbleRowOther: {
-    justifyContent: 'flex-start',
-  },
-  bubbleAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    marginBottom: 16,
-  },
-  bubbleAvatarFallback: {
-    backgroundColor: COLORS.surfaceLight,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xxs,
+    paddingHorizontal: SPACING.lg,
   },
-  bubbleContent: {
-    maxWidth: '72%',
+  dateSeparatorLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.border,
   },
-  bubble: {
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  dateSeparatorText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    backgroundColor: withAlpha(COLORS.surfaceLight, 0.8),
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 3,
+    borderRadius: RADIUS.pill,
+    overflow: 'hidden',
   },
-  bubbleMe: {
-    backgroundColor: COLORS.gold,
-    borderBottomRightRadius: 4,
+  // ---- 入力バー ----------------------------------------------
+  inputBarContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.glassBorder,
   },
-  bubbleOther: {
-    backgroundColor: COLORS.surface,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  inputBarBlur: {
+    overflow: 'hidden',
   },
-  bubbleText: {
-    fontSize: 14,
-    lineHeight: 20,
+  inputBarGlass: {
+    backgroundColor: COLORS.glassBg,
   },
-  bubbleTextMe: {
-    color: COLORS.background,
+  inputBarSolid: {
+    backgroundColor: COLORS.glassBgSolid,
   },
-  bubbleTextOther: {
-    color: COLORS.text,
-  },
-  bubbleImage: {
-    width: 200,
-    height: 150,
-    borderRadius: 12,
-  },
-  bubbleTime: {
-    fontSize: 10,
-    marginTop: 2,
-    color: COLORS.textMuted,
-  },
-  bubbleTimeMe: {
-    textAlign: 'right',
-  },
-  bubbleTimeOther: {
-    textAlign: 'left',
-  },
-  readStatus: {
-    color: COLORS.neonBlue,
-    fontSize: 10,
-  },
-  inputArea: {
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 10,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 10,
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    gap: 8,
+    padding: SPACING.xs + 2,
+    gap: SPACING.xs,
   },
   imageButton: {
-    width: 40,
-    height: 40,
+    width: SEND_BUTTON_SIZE,
+    height: SEND_BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   textInput: {
     flex: 1,
-    backgroundColor: COLORS.surfaceLight,
+    backgroundColor: withAlpha(COLORS.surfaceLight, 0.9),
     color: COLORS.text,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.sm + 2,
+    paddingVertical: SPACING.xs,
     fontSize: 14,
     maxHeight: 100,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  sendButtonSlot: {
+    height: SEND_BUTTON_SIZE,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: SEND_BUTTON_SIZE,
+    height: SEND_BUTTON_SIZE,
+    borderRadius: SEND_BUTTON_SIZE / 2,
     backgroundColor: COLORS.gold,
     alignItems: 'center',
     justifyContent: 'center',
