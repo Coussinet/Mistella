@@ -5,7 +5,7 @@ import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useAppStore } from '../store/appStore';
-import type { CastTabParamList } from '../types';
+import type { CastStackParamList, CastTabParamList } from '../types';
 
 import TimelineScreen from '../screens/common/TimelineScreen';
 import ProfileScreen from '../screens/common/ProfileScreen';
@@ -29,18 +29,24 @@ const stackScreenOptions = {
   contentStyle: { backgroundColor: COLORS.background },
 };
 
+/** 各タブ内スタックのルート画面名（*Main）を含めたパラメータ定義 */
+type CastStacks = CastStackParamList & {
+  TimelineMain: undefined;
+  MatchesMain: undefined;
+  ProfileMain: undefined;
+};
 
-const TimelineStack = createNativeStackNavigator();
+const TimelineStack = createNativeStackNavigator<CastStacks>();
 function TimelineStackNavigator() {
   return (
     <TimelineStack.Navigator screenOptions={stackScreenOptions}>
-      <TimelineStack.Screen name="TimelineMain" component={TimelineScreen} options={{ title: 'タイムライン' }} />
+      <TimelineStack.Screen name="TimelineMain" component={TimelineScreen} options={{ headerShown: false }} />
       <TimelineStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
     </TimelineStack.Navigator>
   );
 }
 
-const SearchStack = createNativeStackNavigator();
+const SearchStack = createNativeStackNavigator<CastStacks>();
 function SearchStackNavigator() {
   return (
     <SearchStack.Navigator screenOptions={stackScreenOptions}>
@@ -52,7 +58,7 @@ function SearchStackNavigator() {
   );
 }
 
-const MatchesStack = createNativeStackNavigator();
+const MatchesStack = createNativeStackNavigator<CastStacks>();
 function MatchesStackNavigator() {
   return (
     <MatchesStack.Navigator screenOptions={stackScreenOptions}>
@@ -63,18 +69,18 @@ function MatchesStackNavigator() {
   );
 }
 
-const CRMStack = createNativeStackNavigator();
+const CRMStack = createNativeStackNavigator<CastStacks>();
 function CRMStackNavigator() {
   return (
     <CRMStack.Navigator screenOptions={stackScreenOptions}>
-      <CRMStack.Screen name="CRMMain" component={CRMScreen} options={{ title: '顧客管理' }} />
+      <CRMStack.Screen name="CRM" component={CRMScreen} options={{ title: '顧客管理' }} />
       <CRMStack.Screen name="CustomerNote" component={CustomerNoteScreen} options={{ title: '顧客メモ' }} />
       <CRMStack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'メッセージ' }} />
     </CRMStack.Navigator>
   );
 }
 
-const ProfileStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator<CastStacks>();
 function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={stackScreenOptions}>
@@ -172,10 +178,10 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: GLASS_BG,
     borderTopWidth: 0,
-    marginHorizontal: 14,
-    marginBottom: 4,
+    marginHorizontal: 12,
+    marginBottom: 10,
     borderRadius: 28,
-    height: 68,
+    height: 76,
     borderWidth: 0.5,
     borderColor: 'rgba(201, 168, 76, 0.25)',
     elevation: 24,
@@ -187,10 +193,11 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 10,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   tabBarItem: {
-    paddingTop: 8,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   badge: {
     backgroundColor: COLORS.error,

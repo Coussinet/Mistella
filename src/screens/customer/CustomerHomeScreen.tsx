@@ -134,9 +134,14 @@ export default function CustomerHomeScreen() {
             ? () => deleteMutation.mutate(item.id)
             : undefined
         }
+        onAvatarPress={
+          item.user_id
+            ? () => navigation.navigate('UserProfile', { userId: item.user_id })
+            : undefined
+        }
       />
     ),
-    [profile, deleteMutation],
+    [profile, deleteMutation, navigation],
   );
 
   const renderFooter = () => {
@@ -165,7 +170,6 @@ export default function CustomerHomeScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* ヘッダー */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>タイムライン</Text>
         <TouchableOpacity
           style={styles.tonightFAB}
           onPress={() =>
@@ -243,17 +247,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 6,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-  },
-  headerTitle: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 0.3,
   },
 
   // 今夜行ける？FABボタン

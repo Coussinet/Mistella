@@ -242,6 +242,9 @@ export type CastStackParamList = {
   CustomerNoteDetail: { noteId: string; customerId: string };
   ChatRoom: { matchId: string; partnerUser: User };
   UserProfile: { userId: string };
+  EditProfile: undefined;
+  Favorites: undefined;
+  Footprints: undefined;
   NotificationSettings: undefined;
 };
 
@@ -249,9 +252,12 @@ export type CastStackParamList = {
 export type CustomerStackParamList = {
   CustomerTabs: undefined;
   CustomerProfileEdit: undefined;
-  CastProfile: { userId: string };
+  UserProfile: { userId: string };
   ChatRoom: { matchId: string; partnerUser: User };
   SendTonightRequest: { targetCastId?: string };
+  EditProfile: undefined;
+  Favorites: undefined;
+  Footprints: undefined;
   NotificationSettings: undefined;
 };
 

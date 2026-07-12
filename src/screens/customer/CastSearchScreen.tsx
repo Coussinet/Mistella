@@ -74,9 +74,27 @@ async function fetchCasts({
     query = query.ilike('shop_address', `%${area}%`);
   }
   if (keyword) {
-    // ユーザーのニックネームは JOIN 側なので RPC を使わず JS フィルタで補完
-    // Supabase の ilike は JOIN 先カラムに直接使えないため、shop_name でも部分検索
-    query = query.ilike('shop_name', `%${keyword}%`);
+    // nicknameはJOINテーブルのため、先にuser_idを取得してOR条件に含める
+    const { data: matchedUsers } = await supabase
+      .from('users')
+      .select('id')
+      .ilike('nickname', `%${keyword}%`);
+    const matchedIds = (matchedUsers ?? []).map((u) => u.id);
+
+    const orParts = [
+      `shop_name.ilike.%${keyword}%`,
+      `shop_address.ilike.%${keyword}%`,
+      `hobbies.ilike.%${keyword}%`,
+      `personality.ilike.%${keyword}%`,
+      `charm_point.ilike.%${keyword}%`,
+      `customer_message.ilike.%${keyword}%`,
+      `favorite_topics.ilike.%${keyword}%`,
+      `activities.ilike.%${keyword}%`,
+    ];
+    if (matchedIds.length > 0) {
+      orParts.push(`user_id.in.(${matchedIds.join(',')})`);
+    }
+    query = query.or(orParts.join(','));
   }
 
   const { data, error } = await query;
@@ -205,7 +223,7 @@ export default function CastSearchScreen() {
         // 足跡を非同期で記録（エラーは無視）
         addFootprint(profile.id, cast.user_id).catch(() => null);
       }
-      navigation.navigate('CastProfile', { userId: cast.user_id });
+      navigation.navigate('UserProfile', { userId: cast.user_id });
     },
     [navigation, profile],
   );

@@ -5,7 +5,7 @@ import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useAppStore } from '../store/appStore';
-import type { CustomerTabParamList } from '../types';
+import type { CustomerStackParamList, CustomerTabParamList } from '../types';
 
 import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
 import CastSearchScreen from '../screens/customer/CastSearchScreen';
@@ -27,18 +27,27 @@ const stackScreenOptions = {
   contentStyle: { backgroundColor: COLORS.background },
 };
 
-const TimelineStack = createNativeStackNavigator();
+/** 各タブ内スタックのルート画面名（*Main）を含めたパラメータ定義 */
+type CustomerStacks = CustomerStackParamList & {
+  TimelineMain: undefined;
+  CastSearchMain: undefined;
+  MapMain: undefined;
+  MatchesMain: undefined;
+  ProfileMain: undefined;
+};
+
+const TimelineStack = createNativeStackNavigator<CustomerStacks>();
 function TimelineStackNavigator() {
   return (
     <TimelineStack.Navigator screenOptions={stackScreenOptions}>
-      <TimelineStack.Screen name="TimelineMain" component={CustomerHomeScreen} options={{ title: 'タイムライン' }} />
+      <TimelineStack.Screen name="TimelineMain" component={CustomerHomeScreen} options={{ headerShown: false }} />
       <TimelineStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'プロフィール' }} />
       <TimelineStack.Screen name="SendTonightRequest" component={TonightSendScreen} options={{ title: '今夜行ける？' }} />
     </TimelineStack.Navigator>
   );
 }
 
-const CastSearchStack = createNativeStackNavigator();
+const CastSearchStack = createNativeStackNavigator<CustomerStacks>();
 function CastSearchStackNavigator() {
   return (
     <CastSearchStack.Navigator screenOptions={stackScreenOptions}>
@@ -49,7 +58,7 @@ function CastSearchStackNavigator() {
   );
 }
 
-const MapStack = createNativeStackNavigator();
+const MapStack = createNativeStackNavigator<CustomerStacks>();
 function MapStackNavigator() {
   return (
     <MapStack.Navigator screenOptions={stackScreenOptions}>
@@ -59,7 +68,7 @@ function MapStackNavigator() {
   );
 }
 
-const MatchesStack = createNativeStackNavigator();
+const MatchesStack = createNativeStackNavigator<CustomerStacks>();
 function MatchesStackNavigator() {
   return (
     <MatchesStack.Navigator screenOptions={stackScreenOptions}>
@@ -70,7 +79,7 @@ function MatchesStackNavigator() {
   );
 }
 
-const ProfileStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator<CustomerStacks>();
 function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={stackScreenOptions}>
@@ -165,10 +174,10 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: GLASS_BG,
     borderTopWidth: 0,
-    marginHorizontal: 14,
-    marginBottom: 4,
+    marginHorizontal: 12,
+    marginBottom: 10,
     borderRadius: 28,
-    height: 68,
+    height: 76,
     borderWidth: 0.5,
     borderColor: 'rgba(201, 168, 76, 0.25)',
     elevation: 24,
@@ -180,10 +189,11 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 10,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   tabBarItem: {
-    paddingTop: 8,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   badge: {
     backgroundColor: COLORS.error,

@@ -1,15 +1,13 @@
 -- ============================================================
 -- Mistella: DBマイグレーション 005
 -- 目的: Supabase Storage バケットの RLS ポリシー設定
--- 実行手順:
---   Supabase Dashboard → SQL Editor にて本ファイルを実行
 -- ============================================================
 
 -- ============================================================
 -- avatars バケット
 -- ============================================================
 
--- 本人のフォルダにアップロード可（パス: {userId}/avatar.jpg）
+DROP POLICY IF EXISTS "avatars_insert_own" ON storage.objects;
 CREATE POLICY "avatars_insert_own"
   ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
@@ -17,7 +15,7 @@ CREATE POLICY "avatars_insert_own"
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- 本人のファイルを更新可（upsert）
+DROP POLICY IF EXISTS "avatars_update_own" ON storage.objects;
 CREATE POLICY "avatars_update_own"
   ON storage.objects FOR UPDATE TO authenticated
   USING (
@@ -25,12 +23,12 @@ CREATE POLICY "avatars_update_own"
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- 全員が読み取り可（プロフィール画像を表示するため）
+DROP POLICY IF EXISTS "avatars_select_all" ON storage.objects;
 CREATE POLICY "avatars_select_all"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'avatars');
 
--- 本人のファイルを削除可
+DROP POLICY IF EXISTS "avatars_delete_own" ON storage.objects;
 CREATE POLICY "avatars_delete_own"
   ON storage.objects FOR DELETE TO authenticated
   USING (
@@ -42,6 +40,7 @@ CREATE POLICY "avatars_delete_own"
 -- media バケット（タイムライン画像・動画）
 -- ============================================================
 
+DROP POLICY IF EXISTS "media_insert_own" ON storage.objects;
 CREATE POLICY "media_insert_own"
   ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
@@ -49,6 +48,7 @@ CREATE POLICY "media_insert_own"
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "media_update_own" ON storage.objects;
 CREATE POLICY "media_update_own"
   ON storage.objects FOR UPDATE TO authenticated
   USING (
@@ -56,10 +56,12 @@ CREATE POLICY "media_update_own"
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "media_select_all" ON storage.objects;
 CREATE POLICY "media_select_all"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'media');
 
+DROP POLICY IF EXISTS "media_delete_own" ON storage.objects;
 CREATE POLICY "media_delete_own"
   ON storage.objects FOR DELETE TO authenticated
   USING (

@@ -4,6 +4,8 @@
 
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,18 +16,18 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { supabase } from '../../lib/supabase';
 import { createTimeline, getTimelines } from '../../services/timelineService';
 import { useAuthStore } from '../../store/authStore';
-import type { Timeline } from '../../types';
+import type { CastStackParamList, Timeline } from '../../types';
 import { formatRelativeTime } from '../../utils/dateUtils';
 import { compressImage } from '../../utils/imageUtils';
 
@@ -49,16 +51,21 @@ function getExpiresLabel(expiresAt: string): string {
 // -----------------------------------------------------------
 // 投稿アイテム
 // -----------------------------------------------------------
-type TimelineItemProps = { item: Timeline };
+type TimelineItemProps = { item: Timeline; onAvatarPress?: () => void };
 
-function TimelineItem({ item }: TimelineItemProps) {
+function TimelineItem({ item, onAvatarPress }: TimelineItemProps) {
   const avatarUri = item.user?.avatar_url;
   const nickname = item.user?.nickname ?? '不明なユーザー';
 
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <View style={styles.avatarWrapper}>
+        <TouchableOpacity
+          style={styles.avatarWrapper}
+          onPress={onAvatarPress}
+          activeOpacity={onAvatarPress ? 0.7 : 1}
+          disabled={!onAvatarPress}
+        >
           {avatarUri ? (
             <Image source={{ uri: avatarUri }} style={styles.avatar} />
           ) : (
@@ -66,7 +73,7 @@ function TimelineItem({ item }: TimelineItemProps) {
               <MaterialIcons name="person" size={20} color={COLORS.textMuted} />
             </View>
           )}
-        </View>
+        </TouchableOpacity>
         <View style={styles.headerMeta}>
           <Text style={styles.nickname}>{nickname}</Text>
           <Text style={styles.timestamp}>{formatRelativeTime(item.created_at)}</Text>
@@ -280,7 +287,10 @@ function PostModal({ visible, onClose, onPosted }: PostModalProps) {
 // メイン画面
 // -----------------------------------------------------------
 
+type NavProp = NativeStackNavigationProp<CastStackParamList>;
+
 export default function TimelineScreen() {
+  const navigation = useNavigation<NavProp>();
   const [timelines, setTimelines] = useState<Timeline[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -371,15 +381,20 @@ export default function TimelineScreen() {
     ) : null;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>タイムライン</Text>
-      </View>
-
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
         data={timelines}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TimelineItem item={item} />}
+        renderItem={({ item }) => (
+          <TimelineItem
+            item={item}
+            onAvatarPress={
+              item.user_id
+                ? () => navigation.navigate('UserProfile', { userId: item.user_id })
+                : undefined
+            }
+          />
+        )}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.3}
         onRefresh={onRefresh}
@@ -403,7 +418,7 @@ export default function TimelineScreen() {
         onClose={() => setModalVisible(false)}
         onPosted={handlePosted}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -416,20 +431,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  headerBar: {
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
   listContent: {
-    paddingVertical: 8,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   emptyList: {
     flexGrow: 1,

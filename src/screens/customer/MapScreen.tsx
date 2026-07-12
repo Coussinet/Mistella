@@ -140,31 +140,36 @@ export default function MapScreen() {
   const [casts, setCasts] = useState<CastProfileWithUser[]>([]);
   const [selectedCast, setSelectedCast] = useState<CastProfileWithUser | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [workingOnly, setWorkingOnly] = useState(false);
 
   // -----------------------------------------------------------
-  // キャスト取得（is_working=true かつ location_enabled=true）
+  // キャスト取得（location_enabled=true、workingOnlyの場合はis_working=trueも条件）
   // -----------------------------------------------------------
 
-  const fetchWorkingCasts = useCallback(async () => {
-    const { data, error } = await supabase
+  const fetchCasts = useCallback(async (onlyWorking: boolean) => {
+    let query = supabase
       .from('cast_profiles')
       .select('*, user:users(*)')
-      .eq('is_working', true)
       .eq('location_enabled', true)
       .not('location_lat', 'is', null)
       .not('location_lng', 'is', null);
 
+    if (onlyWorking) {
+      query = query.eq('is_working', true);
+    }
+
+    const { data, error } = await query;
     if (!error && data) {
       setCasts(data as CastProfileWithUser[]);
     }
   }, []);
 
   // -----------------------------------------------------------
-  // Supabase Realtime 購読
+  // Supabase Realtime 購読（workingOnlyが変わるたびに再購読）
   // -----------------------------------------------------------
 
   useEffect(() => {
-    fetchWorkingCasts();
+    fetchCasts(workingOnly);
 
     const channel = supabase
       .channel('cast_profiles_map')
@@ -172,7 +177,7 @@ export default function MapScreen() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'cast_profiles' },
         () => {
-          fetchWorkingCasts();
+          fetchCasts(workingOnly);
         },
       )
       .subscribe();
@@ -180,7 +185,7 @@ export default function MapScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchWorkingCasts]);
+  }, [fetchCasts, workingOnly]);
 
   // -----------------------------------------------------------
   // 現在地へ移動
@@ -278,6 +283,18 @@ export default function MapScreen() {
         )}
       </TouchableOpacity>
 
+      {/* 出勤中フィルターボタン */}
+      <TouchableOpacity
+        style={[styles.workingFilterButton, workingOnly && styles.workingFilterButtonActive]}
+        onPress={() => setWorkingOnly((prev) => !prev)}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.workingDot, workingOnly && styles.workingDotActive]} />
+        <Text style={[styles.workingFilterText, workingOnly && styles.workingFilterTextActive]}>
+          出勤中
+        </Text>
+      </TouchableOpacity>
+
       {/* キャストプレビューカード */}
       {selectedCast ? (
         <SafeAreaView style={styles.previewSafe} edges={['bottom']}>
@@ -365,6 +382,48 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
+  },
+
+  // 出勤中フィルターボタン
+  workingFilterButton: {
+    position: 'absolute',
+    right: 16,
+    top: 116,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  workingFilterButtonActive: {
+    backgroundColor: COLORS.gold,
+    borderColor: COLORS.gold,
+  },
+  workingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.textMuted,
+  },
+  workingDotActive: {
+    backgroundColor: COLORS.background,
+  },
+  workingFilterText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  workingFilterTextActive: {
+    color: COLORS.background,
   },
 
   // ピン

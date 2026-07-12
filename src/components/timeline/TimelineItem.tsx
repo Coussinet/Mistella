@@ -27,6 +27,7 @@ interface TimelineItemProps {
   timeline: Timeline;
   onDelete?: () => void;
   isOwn?: boolean;
+  onAvatarPress?: (userId: string) => void;
 }
 
 // -----------------------------------------------------------
@@ -58,6 +59,7 @@ export default function TimelineItem({
   timeline,
   onDelete,
   isOwn = false,
+  onAvatarPress,
 }: TimelineItemProps) {
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [remaining, setRemaining] = useState(() =>
@@ -92,12 +94,18 @@ export default function TimelineItem({
     <View style={styles.card}>
       {/* ヘッダー */}
       <View style={styles.header}>
-        <Avatar
-          uri={timeline.user?.avatar_url ?? null}
-          size={44}
-          nickname={timeline.user?.nickname}
-          isWorking={false}
-        />
+        <TouchableOpacity
+          onPress={onAvatarPress ? () => onAvatarPress(timeline.user_id) : undefined}
+          activeOpacity={onAvatarPress ? 0.7 : 1}
+          disabled={!onAvatarPress}
+        >
+          <Avatar
+            uri={timeline.user?.avatar_url ?? null}
+            size={44}
+            nickname={timeline.user?.nickname}
+            isWorking={false}
+          />
+        </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.nickname}>
             {timeline.user?.nickname ?? '不明なユーザー'}
