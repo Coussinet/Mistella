@@ -1,240 +1,107 @@
 // ============================================================
 // Mistella - FootprintsScreen（共通）
+// 自分のプロフィールを閲覧したユーザーの一覧。
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { getFootprints } from '@/services/customerService';
-import { useAuthStore } from '@/store/authStore';
-import type {
-  Footprint,
-} from '@/types';
+import { SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
+import UserListItem from '@/components/common/UserListItem';
+import { useFootprints } from '@/hooks/queries/useFootprints';
+import type { CastStackParamList } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 
-// -----------------------------------------------------------
-// 足跡アイテム
-// -----------------------------------------------------------
-type FootprintItemProps = {
-  item: Footprint;
-  onPress: (userId: string) => void;
-};
-
-function FootprintItem({ item, onPress }: FootprintItemProps) {
-  const visitor = item.visitor;
-  if (!visitor) return null;
-
-  return (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => onPress(visitor.id)}
-      activeOpacity={0.75}
-    >
-      {visitor.avatar_url ? (
-        <Image source={{ uri: visitor.avatar_url }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarFallback]}>
-          <MaterialIcons name="person" size={24} color={COLORS.textMuted} />
-        </View>
-      )}
-
-      <View style={styles.itemInfo}>
-        <Text style={styles.nickname}>{visitor.nickname}</Text>
-        <Text style={styles.visitTime}>{formatRelativeTime(item.created_at)} に訪問</Text>
-      </View>
-
-      <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
-    </TouchableOpacity>
-  );
-}
-
-// -----------------------------------------------------------
-// メイン画面
-// -----------------------------------------------------------
-
 export default function FootprintsScreen() {
-  const { user } = useAuthStore();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<CastStackParamList>>();
 
-  const [footprints, setFootprints] = useState<Footprint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: footprints, isPending, isError, error, refetch, isRefetching } =
+    useFootprints();
 
-  const loadFootprints = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await getFootprints(user.id);
-      setFootprints(data);
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '読み込みに失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    loadFootprints();
-  }, [loadFootprints]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadFootprints();
-    setRefreshing(false);
-  };
-
-  const handlePress = (userId: string) => {
-    navigation.navigate('UserProfile', { userId });
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
-      </View>
-    );
-  }
+  if (isPending) return <SkeletonList />;
+  if (isError) return <ErrorView error={error} onRetry={refetch} />;
 
   return (
     <View style={styles.container}>
       <FlatList
         data={footprints}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FootprintItem item={item} onPress={handlePress} />
-        )}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
+        renderItem={({ item }) =>
+          item.visitor ? (
+            <UserListItem
+              avatarUrl={item.visitor.avatar_url}
+              nickname={item.visitor.nickname}
+              meta={formatRelativeTime(item.created_at)}
+              onPress={() =>
+                navigation.navigate('UserProfile', { userId: item.visitor!.id })
+              }
+              right={
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
+              }
+            />
+          ) : null
+        }
+        onRefresh={refetch}
+        refreshing={isRefetching}
         ListHeaderComponent={
-          <View style={styles.headerBanner}>
-            <MaterialIcons name="visibility" size={20} color={COLORS.neonBlue} />
-            <Text style={styles.headerBannerText}>
-              あなたのプロフィールを{footprints.length}人が閲覧しました
-            </Text>
-          </View>
+          footprints.length > 0 ? (
+            <View style={styles.headerBanner}>
+              <MaterialIcons name="visibility" size={20} color={COLORS.neonBlue} />
+              <Text style={styles.headerBannerText}>
+                あなたのプロフィールを{footprints.length}人が閲覧しました
+              </Text>
+            </View>
+          ) : null
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="directions-walk" size={64} color={COLORS.textMuted} />
-            <Text style={styles.emptyTitle}>まだ足跡がありません</Text>
-            <Text style={styles.emptySubtitle}>
-              プロフィールを充実させて多くの人に見てもらいましょう
-            </Text>
-          </View>
+          <EmptyState
+            icon="visibility"
+            title="まだ足跡がありません"
+            description="プロフィールを充実させて多くの人に見てもらいましょう"
+          />
         }
-        contentContainerStyle={
-          footprints.length === 0 ? styles.emptyList : styles.listContent
-        }
+        contentContainerStyle={footprints.length === 0 ? styles.emptyList : undefined}
       />
     </View>
   );
 }
-
-// -----------------------------------------------------------
-// Styles
-// -----------------------------------------------------------
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginBottom: 8,
+    gap: SPACING.xs,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 12,
+    backgroundColor: withAlpha(COLORS.neonBlue, 0.1),
   },
   headerBannerText: {
-    color: COLORS.text,
-    fontSize: 13,
-    fontWeight: '600',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.neonBlue,
     flex: 1,
-    lineHeight: 18,
-  },
-  listContent: {
-    paddingBottom: 16,
-  },
-  emptyList: {
-    flexGrow: 1,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  avatarFallback: {
-    backgroundColor: COLORS.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  nickname: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  visitTime: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
   },
   separator: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: COLORS.border,
     marginLeft: 78,
   },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
+  emptyList: {
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingTop: 100,
-    gap: 12,
-  },
-  emptyTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  emptySubtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-    lineHeight: 19,
   },
 });

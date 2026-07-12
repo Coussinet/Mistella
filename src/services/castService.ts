@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   BroadcastReactionType,
   BroadcastTonightRequest,
+  CastProfile,
   CustomerNote,
   TonightRequest,
   WorkStatus,
@@ -327,4 +328,37 @@ export async function getReminderCustomers(
   ];
 
   return merged;
+}
+
+// -----------------------------------------------------------
+// キャストプロフィール一括取得
+// -----------------------------------------------------------
+
+/** 複数ユーザー ID のキャストプロフィールをまとめて取得する。 */
+export async function getCastProfilesByUserIds(
+  userIds: string[],
+): Promise<CastProfile[]> {
+  if (userIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('cast_profiles')
+    .select('*')
+    .in('user_id', userIds);
+
+  if (error) throw error;
+  return (data ?? []) as unknown as CastProfile[];
+}
+
+/** 単一ユーザーのキャストプロフィールを取得する（存在しなければ null）。 */
+export async function getCastProfileByUserId(
+  userId: string,
+): Promise<CastProfile | null> {
+  const { data, error } = await supabase
+    .from('cast_profiles')
+    .select('*, user:users(*)')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as unknown as CastProfile) ?? null;
 }

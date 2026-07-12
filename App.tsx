@@ -4,13 +4,14 @@ import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from '@/navigation/AppNavigator';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
 import { getProfile, getCastProfile } from '@/services/authService';
 import { registerPushToken } from '@/services/notificationService';
+import { queryClient } from '@/lib/queryClient';
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
@@ -30,15 +31,6 @@ if (Platform.OS === 'android') {
     vibrationPattern: [0, 250, 250, 250],
   });
 }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      retry: 2,
-    },
-  },
-});
 
 export default function App() {
   const { setSession, setUser, setProfile, setCastProfile, setLoading } = useAuthStore();
