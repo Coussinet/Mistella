@@ -2,8 +2,8 @@
 // Mistella - Auth Service
 // ============================================================
 
-import { supabase } from '../lib/supabase';
-import type { CastProfile, CustomerProfile, User, UserRole } from '../types';
+import { supabase } from '@/lib/supabase';
+import type { CastProfile, CustomerProfile, User, UserRole } from '@/types';
 
 // -----------------------------------------------------------
 // サインアップ

@@ -18,14 +18,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../../components/common/Avatar';
-import Button from '../../components/common/Button';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import * as castService from '../../services/castService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastStackParamList, CustomerNote, User } from '../../types';
-import { formatDate } from '../../utils/dateUtils';
+import Avatar from '@/components/common/Avatar';
+import Button from '@/components/common/Button';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import * as castService from '@/services/castService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastStackParamList, CustomerNote, User } from '@/types';
+import { formatDate } from '@/utils/dateUtils';
 
 type Props = NativeStackScreenProps<CastStackParamList, 'CustomerNote'>;
 

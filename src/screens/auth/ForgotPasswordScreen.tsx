@@ -17,9 +17,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import type { AuthStackParamList } from '../../types';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import type { AuthStackParamList } from '@/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 

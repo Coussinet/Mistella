@@ -17,17 +17,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '@/constants/colors';
 import {
   getTimelines,
   createTimeline,
   deleteTimeline,
-} from '../../services/timelineService';
-import { useAuthStore } from '../../store/authStore';
-import TimelineItem from '../../components/timeline/TimelineItem';
-import TimelinePostForm from '../../components/timeline/TimelinePostForm';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import type { CustomerStackParamList, Timeline } from '../../types';
+} from '@/services/timelineService';
+import { useAuthStore } from '@/store/authStore';
+import TimelineItem from '@/components/timeline/TimelineItem';
+import TimelinePostForm from '@/components/timeline/TimelinePostForm';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import type { CustomerStackParamList, Timeline } from '@/types';
 
 // -----------------------------------------------------------
 // 定数

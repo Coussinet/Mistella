@@ -2,8 +2,8 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { supabase } from '../lib/supabase';
-import type { NotificationSettingsKeys, PushToken } from '../types';
+import { supabase } from '@/lib/supabase';
+import type { NotificationSettingsKeys, PushToken } from '@/types';
 
 export async function registerPushToken(userId: string): Promise<void> {
 	if (!Device.isDevice) return;

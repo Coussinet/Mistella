@@ -3,24 +3,24 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/colors';
-import { useAppStore } from '../store/appStore';
-import type { CastStackParamList, CastTabParamList } from '../types';
+import { COLORS } from '@/constants/colors';
+import { useAppStore } from '@/store/appStore';
+import type { CastStackParamList, CastTabParamList } from '@/types';
 
-import TimelineScreen from '../screens/common/TimelineScreen';
-import ProfileScreen from '../screens/common/ProfileScreen';
-import EditProfileScreen from '../screens/common/EditProfileScreen';
-import MatchesScreen from '../screens/common/MatchesScreen';
-import ChatScreen from '../screens/common/ChatScreen';
-import FavoritesScreen from '../screens/common/FavoritesScreen';
-import FootprintsScreen from '../screens/common/FootprintsScreen';
-import UserProfileScreen from '../screens/common/UserProfileScreen';
-import WorkingStatusScreen from '../screens/cast/WorkingStatusScreen';
-import ShopInfoScreen from '../screens/cast/ShopInfoScreen';
-import TonightRequestsScreen from '../screens/cast/TonightRequestsScreen';
-import CRMScreen from '../screens/cast/CRMScreen';
-import CustomerNoteScreen from '../screens/cast/CustomerNoteScreen';
-import NotificationSettingsScreen from '../screens/common/NotificationSettingsScreen';
+import TimelineScreen from '@/screens/common/TimelineScreen';
+import ProfileScreen from '@/screens/common/ProfileScreen';
+import EditProfileScreen from '@/screens/common/EditProfileScreen';
+import MatchesScreen from '@/screens/common/MatchesScreen';
+import ChatScreen from '@/screens/common/ChatScreen';
+import FavoritesScreen from '@/screens/common/FavoritesScreen';
+import FootprintsScreen from '@/screens/common/FootprintsScreen';
+import UserProfileScreen from '@/screens/common/UserProfileScreen';
+import WorkingStatusScreen from '@/screens/cast/WorkingStatusScreen';
+import ShopInfoScreen from '@/screens/cast/ShopInfoScreen';
+import TonightRequestsScreen from '@/screens/cast/TonightRequestsScreen';
+import CRMScreen from '@/screens/cast/CRMScreen';
+import CustomerNoteScreen from '@/screens/cast/CustomerNoteScreen';
+import NotificationSettingsScreen from '@/screens/common/NotificationSettingsScreen';
 
 const stackScreenOptions = {
   headerStyle: { backgroundColor: COLORS.surface },

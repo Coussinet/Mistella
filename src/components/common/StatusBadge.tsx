@@ -4,8 +4,8 @@
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import type { WorkStatus } from '../../types';
+import { COLORS } from '@/constants/colors';
+import type { WorkStatus } from '@/types';
 
 // -----------------------------------------------------------
 // Props

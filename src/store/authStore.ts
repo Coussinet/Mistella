@@ -4,8 +4,8 @@
 
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import type { CastProfile, User } from '../types';
+import { supabase } from '@/lib/supabase';
+import type { CastProfile, User } from '@/types';
 
 // -----------------------------------------------------------
 // Store Interface

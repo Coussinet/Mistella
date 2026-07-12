@@ -16,13 +16,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { getFootprints } from '../../services/customerService';
-import { useAuthStore } from '../../store/authStore';
+import { COLORS } from '@/constants/colors';
+import { getFootprints } from '@/services/customerService';
+import { useAuthStore } from '@/store/authStore';
 import type {
   Footprint,
-} from '../../types';
-import { formatRelativeTime } from '../../utils/dateUtils';
+} from '@/types';
+import { formatRelativeTime } from '@/utils/dateUtils';
 
 // -----------------------------------------------------------
 // 足跡アイテム

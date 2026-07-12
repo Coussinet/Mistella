@@ -5,11 +5,11 @@
 
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { COLORS } from '../constants/colors';
-import { useAuthStore } from '../store/authStore';
-import AuthNavigator from './AuthNavigator';
-import CastTabNavigator from './CastTabNavigator';
-import CustomerTabNavigator from './CustomerTabNavigator';
+import { COLORS } from '@/constants/colors';
+import { useAuthStore } from '@/store/authStore';
+import AuthNavigator from '@/navigation/AuthNavigator';
+import CastTabNavigator from '@/navigation/CastTabNavigator';
+import CustomerTabNavigator from '@/navigation/CustomerTabNavigator';
 
 // -----------------------------------------------------------
 // ローディング画面

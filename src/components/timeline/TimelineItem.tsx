@@ -14,10 +14,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { formatRelativeTime } from '../../utils/dateUtils';
-import type { Timeline } from '../../types';
-import Avatar from '../common/Avatar';
+import { COLORS } from '@/constants/colors';
+import { formatRelativeTime } from '@/utils/dateUtils';
+import type { Timeline } from '@/types';
+import Avatar from '@/components/common/Avatar';
 
 // -----------------------------------------------------------
 // Props

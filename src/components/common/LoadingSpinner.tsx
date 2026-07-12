@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '@/constants/colors';
 
 // -----------------------------------------------------------
 // Props

@@ -19,13 +19,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import { useAuthStore } from '../../store/authStore';
-import { addFootprint } from '../../services/customerService';
-import Avatar from '../../components/common/Avatar';
-import StatusBadge from '../../components/common/StatusBadge';
-import type { CastProfileWithUser, CustomerStackParamList } from '../../types';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
+import { addFootprint } from '@/services/customerService';
+import Avatar from '@/components/common/Avatar';
+import StatusBadge from '@/components/common/StatusBadge';
+import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
 
 // -----------------------------------------------------------
 // 定数

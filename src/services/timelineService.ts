@@ -2,8 +2,8 @@
 // Mistella - Timeline Service
 // ============================================================
 
-import { supabase } from '../lib/supabase';
-import type { Timeline } from '../types';
+import { supabase } from '@/lib/supabase';
+import type { Timeline } from '@/types';
 
 const DEFAULT_PAGE_SIZE = 20;
 

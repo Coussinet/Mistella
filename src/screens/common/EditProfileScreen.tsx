@@ -19,17 +19,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '@/constants/colors';
 import {
   getCastProfile,
   getCustomerProfile,
   updateProfile,
   upsertCastProfile,
   upsertCustomerProfile,
-} from '../../services/authService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastProfile, CustomerProfile } from '../../types';
-import { uploadImage } from '../../utils/imageUtils';
+} from '@/services/authService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastProfile, CustomerProfile } from '@/types';
+import { uploadImage } from '@/utils/imageUtils';
 
 // -----------------------------------------------------------
 // ラベル付き入力

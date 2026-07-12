@@ -18,19 +18,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { getProfile } from '../../services/authService';
-import { getFavorites, getFootprints } from '../../services/customerService';
-import { getMyTimelines } from '../../services/timelineService';
-import { useAuthStore } from '../../store/authStore';
+import { COLORS } from '@/constants/colors';
+import { getProfile } from '@/services/authService';
+import { getFavorites, getFootprints } from '@/services/customerService';
+import { getMyTimelines } from '@/services/timelineService';
+import { useAuthStore } from '@/store/authStore';
 import type {
   CastProfile,
   CastStackParamList,
   CustomerStackParamList,
   Timeline,
-} from '../../types';
-import { formatRelativeTime } from '../../utils/dateUtils';
-import { supabase } from '../../lib/supabase';
+} from '@/types';
+import { formatRelativeTime } from '@/utils/dateUtils';
+import { supabase } from '@/lib/supabase';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (SCREEN_WIDTH - 4) / 3;

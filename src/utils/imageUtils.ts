@@ -1,6 +1,6 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Audio } from 'expo-av';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // -----------------------------------------------------------
 // 定数

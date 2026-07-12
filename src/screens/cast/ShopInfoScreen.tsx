@@ -16,11 +16,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/common/Button';
-import { COLORS } from '../../constants/colors';
-import * as authService from '../../services/authService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastStackParamList } from '../../types';
+import Button from '@/components/common/Button';
+import { COLORS } from '@/constants/colors';
+import * as authService from '@/services/authService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastStackParamList } from '@/types';
 
 type Props = NativeStackScreenProps<CastStackParamList, 'ShopInfo'>;
 

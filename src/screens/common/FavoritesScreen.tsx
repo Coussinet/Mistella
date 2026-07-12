@@ -18,15 +18,15 @@ import {
   View,
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import { getFavorites, removeFavorite } from '../../services/customerService';
-import { useAuthStore } from '../../store/authStore';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { getFavorites, removeFavorite } from '@/services/customerService';
+import { useAuthStore } from '@/store/authStore';
 import type {
   CastProfile,
   CastStackParamList,
   Favorite,
-} from '../../types';
+} from '@/types';
 
 // -----------------------------------------------------------
 // 出勤バッジ（キャスト用）

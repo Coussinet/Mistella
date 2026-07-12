@@ -19,27 +19,27 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import { getProfile } from '../../services/authService';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { getProfile } from '@/services/authService';
 import {
   addFavorite,
   addFootprint,
   isFavorite,
   removeFavorite,
   sendTonightRequest,
-} from '../../services/customerService';
-import { blockUser, reportUser } from '../../services/blockService';
-import { sendLike } from '../../services/matchService';
-import { getMyTimelines } from '../../services/timelineService';
-import { useAuthStore } from '../../store/authStore';
+} from '@/services/customerService';
+import { blockUser, reportUser } from '@/services/blockService';
+import { sendLike } from '@/services/matchService';
+import { getMyTimelines } from '@/services/timelineService';
+import { useAuthStore } from '@/store/authStore';
 import type {
   CastProfile,
   ReportReason,
   Timeline,
   User,
-} from '../../types';
-import { formatRelativeTime } from '../../utils/dateUtils';
+} from '@/types';
+import { formatRelativeTime } from '@/utils/dateUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (SCREEN_WIDTH - 4) / 3;

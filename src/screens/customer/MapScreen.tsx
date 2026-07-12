@@ -17,13 +17,13 @@ import {
 } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import Avatar from '../../components/common/Avatar';
-import StatusBadge from '../../components/common/StatusBadge';
-import { addFootprint } from '../../services/customerService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastProfileWithUser, CustomerStackParamList } from '../../types';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import Avatar from '@/components/common/Avatar';
+import StatusBadge from '@/components/common/StatusBadge';
+import { addFootprint } from '@/services/customerService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
 
 // -----------------------------------------------------------
 // Google Maps ダークスタイル定義

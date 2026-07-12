@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import type { ReportReason } from '../types';
+import { supabase } from '@/lib/supabase';
+import type { ReportReason } from '@/types';
 
 export async function blockUser(
 	blockerId: string,

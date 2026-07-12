@@ -3,22 +3,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLORS } from '../constants/colors';
-import { useAppStore } from '../store/appStore';
-import type { CustomerStackParamList, CustomerTabParamList } from '../types';
+import { COLORS } from '@/constants/colors';
+import { useAppStore } from '@/store/appStore';
+import type { CustomerStackParamList, CustomerTabParamList } from '@/types';
 
-import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
-import CastSearchScreen from '../screens/customer/CastSearchScreen';
-import MapScreen from '../screens/customer/MapScreen';
-import TonightSendScreen from '../screens/customer/TonightSendScreen';
-import ProfileScreen from '../screens/common/ProfileScreen';
-import EditProfileScreen from '../screens/common/EditProfileScreen';
-import MatchesScreen from '../screens/common/MatchesScreen';
-import ChatScreen from '../screens/common/ChatScreen';
-import FavoritesScreen from '../screens/common/FavoritesScreen';
-import FootprintsScreen from '../screens/common/FootprintsScreen';
-import UserProfileScreen from '../screens/common/UserProfileScreen';
-import NotificationSettingsScreen from '../screens/common/NotificationSettingsScreen';
+import CustomerHomeScreen from '@/screens/customer/CustomerHomeScreen';
+import CastSearchScreen from '@/screens/customer/CastSearchScreen';
+import MapScreen from '@/screens/customer/MapScreen';
+import TonightSendScreen from '@/screens/customer/TonightSendScreen';
+import ProfileScreen from '@/screens/common/ProfileScreen';
+import EditProfileScreen from '@/screens/common/EditProfileScreen';
+import MatchesScreen from '@/screens/common/MatchesScreen';
+import ChatScreen from '@/screens/common/ChatScreen';
+import FavoritesScreen from '@/screens/common/FavoritesScreen';
+import FootprintsScreen from '@/screens/common/FootprintsScreen';
+import UserProfileScreen from '@/screens/common/UserProfileScreen';
+import NotificationSettingsScreen from '@/screens/common/NotificationSettingsScreen';
 
 const stackScreenOptions = {
   headerStyle: { backgroundColor: COLORS.surface },

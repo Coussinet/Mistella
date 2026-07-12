@@ -10,10 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import type { CastProfile, User } from '../../types';
-import Avatar from '../common/Avatar';
-import StatusBadge from '../common/StatusBadge';
+import { COLORS } from '@/constants/colors';
+import type { CastProfile, User } from '@/types';
+import Avatar from '@/components/common/Avatar';
+import StatusBadge from '@/components/common/StatusBadge';
 
 // -----------------------------------------------------------
 // Props

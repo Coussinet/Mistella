@@ -12,9 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import type { Message } from '../../types';
-import Avatar from '../common/Avatar';
+import { COLORS } from '@/constants/colors';
+import type { Message } from '@/types';
+import Avatar from '@/components/common/Avatar';
 
 // -----------------------------------------------------------
 // Props

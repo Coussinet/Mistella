@@ -22,23 +22,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 import {
   getMessages,
   markMessagesAsRead,
   sendMessage,
   subscribeToMessages,
-} from '../../services/messageService';
-import { useAuthStore } from '../../store/authStore';
+} from '@/services/messageService';
+import { useAuthStore } from '@/store/authStore';
 import type {
   CastStackParamList,
   CustomerStackParamList,
   Message,
   User,
-} from '../../types';
-import { formatRelativeTime } from '../../utils/dateUtils';
-import { uploadImage } from '../../utils/imageUtils';
+} from '@/types';
+import { formatRelativeTime } from '@/utils/dateUtils';
+import { uploadImage } from '@/utils/imageUtils';
 
 type ChatRouteParams = {
   matchId: string;

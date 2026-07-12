@@ -2,9 +2,9 @@
 // Mistella - Customer Service（顧客専用機能）
 // ============================================================
 
-import { supabase } from '../lib/supabase';
-import type { Favorite, Footprint } from '../types';
-import { sendPushNotification } from './notificationService';
+import { supabase } from '@/lib/supabase';
+import type { Favorite, Footprint } from '@/types';
+import { sendPushNotification } from '@/services/notificationService';
 
 // -----------------------------------------------------------
 // 今夜行ける？送信

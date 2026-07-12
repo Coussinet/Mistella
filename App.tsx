@@ -6,11 +6,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from './src/navigation/AppNavigator';
-import { useAuthStore } from './src/store/authStore';
-import { supabase } from './src/lib/supabase';
-import { getProfile, getCastProfile } from './src/services/authService';
-import { registerPushToken } from './src/services/notificationService';
+import AppNavigator from '@/navigation/AppNavigator';
+import { useAuthStore } from '@/store/authStore';
+import { supabase } from '@/lib/supabase';
+import { getProfile, getCastProfile } from '@/services/authService';
+import { registerPushToken } from '@/services/notificationService';
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({

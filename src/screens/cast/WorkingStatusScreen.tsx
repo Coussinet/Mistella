@@ -17,11 +17,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import WorkStatusToggle from '../../components/cast/WorkStatusToggle';
-import { COLORS } from '../../constants/colors';
-import * as castService from '../../services/castService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastStackParamList, WorkStatus } from '../../types';
+import WorkStatusToggle from '@/components/cast/WorkStatusToggle';
+import { COLORS } from '@/constants/colors';
+import * as castService from '@/services/castService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastStackParamList, WorkStatus } from '@/types';
 
 type Props = NativeStackScreenProps<CastStackParamList, 'WorkingStatus'>;
 

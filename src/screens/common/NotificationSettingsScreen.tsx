@@ -8,13 +8,13 @@ import {
 	Text,
 	View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '@/constants/colors';
 import {
 	getNotificationSettings,
 	updateNotificationSettings,
-} from '../../services/notificationService';
-import { useAuthStore } from '../../store/authStore';
-import type { NotificationSettingsKeys } from '../../types';
+} from '@/services/notificationService';
+import { useAuthStore } from '@/store/authStore';
+import type { NotificationSettingsKeys } from '@/types';
 
 type SettingItem = {
 	key: keyof NotificationSettingsKeys;

@@ -16,16 +16,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { getMatches } from '../../services/matchService';
-import { useAuthStore } from '../../store/authStore';
+import { COLORS } from '@/constants/colors';
+import { getMatches } from '@/services/matchService';
+import { useAuthStore } from '@/store/authStore';
 import type {
   CastStackParamList,
   CustomerStackParamList,
   Match,
   User,
-} from '../../types';
-import { formatRelativeTime } from '../../utils/dateUtils';
+} from '@/types';
+import { formatRelativeTime } from '@/utils/dateUtils';
 
 // -----------------------------------------------------------
 // マッチアイテム

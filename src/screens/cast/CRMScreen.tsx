@@ -16,17 +16,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../../components/common/Avatar';
-import { COLORS } from '../../constants/colors';
-import * as castService from '../../services/castService';
-import { useAuthStore } from '../../store/authStore';
-import type { CastStackParamList, CustomerNote } from '../../types';
+import Avatar from '@/components/common/Avatar';
+import { COLORS } from '@/constants/colors';
+import * as castService from '@/services/castService';
+import { useAuthStore } from '@/store/authStore';
+import type { CastStackParamList, CustomerNote } from '@/types';
 import {
   formatDate,
   getDaysUntil,
   isBirthdayApproaching,
   isToday,
-} from '../../utils/dateUtils';
+} from '@/utils/dateUtils';
 
 type Props = NativeStackScreenProps<CastStackParamList, 'CRM'>;
 

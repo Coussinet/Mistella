@@ -20,21 +20,21 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 import {
   sendTonightRequest,
   sendBroadcastTonightRequest,
   getFavorites,
-} from '../../services/customerService';
-import { useAuthStore } from '../../store/authStore';
-import Avatar from '../../components/common/Avatar';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+} from '@/services/customerService';
+import { useAuthStore } from '@/store/authStore';
+import Avatar from '@/components/common/Avatar';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import type {
   CastProfileWithUser,
   CustomerStackParamList,
   Favorite,
-} from '../../types';
+} from '@/types';
 
 // -----------------------------------------------------------
 // 送信先モード

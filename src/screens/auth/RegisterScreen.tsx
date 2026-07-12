@@ -17,10 +17,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
-import { supabase } from '../../lib/supabase';
-import { useAuthStore } from '../../store/authStore';
-import type { AuthStackParamList, UserRole } from '../../types';
+import { COLORS } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
+import type { AuthStackParamList, UserRole } from '@/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
