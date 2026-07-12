@@ -128,7 +128,7 @@ export default function FootprintsScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialIcons name="footprint" size={64} color={COLORS.textMuted} />
+            <MaterialIcons name="directions-walk" size={64} color={COLORS.textMuted} />
             <Text style={styles.emptyTitle}>まだ足跡がありません</Text>
             <Text style={styles.emptySubtitle}>
               プロフィールを充実させて多くの人に見てもらいましょう

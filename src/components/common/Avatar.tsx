@@ -40,7 +40,7 @@ export default function Avatar({
   const dotSize = Math.max(10, Math.round(size * 0.22));
   const fontSize = Math.round(size * 0.38);
 
-  const containerStyle: ViewStyle = {
+  const containerStyle = {
     width: size,
     height: size,
     borderRadius: size / 2,

@@ -62,11 +62,13 @@ export async function sendMessage(
   if (!data) throw new Error('メッセージの送信に失敗しました。');
 
   // 相手に通知を送信（失敗してもメッセージ送信は成功扱い）
-  supabase
-    .from('matches')
-    .select('customer_id, cast_id')
-    .eq('id', matchId)
-    .maybeSingle()
+  Promise.resolve(
+    supabase
+      .from('matches')
+      .select('customer_id, cast_id')
+      .eq('id', matchId)
+      .maybeSingle(),
+  )
     .then(({ data: match }) => {
       if (match) {
         const recipientId = match.customer_id === senderId ? match.cast_id : match.customer_id;
