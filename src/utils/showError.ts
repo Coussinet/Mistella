@@ -11,8 +11,13 @@ const MESSAGE_MAP: Array<[pattern: string, message: string]> = [
   ['Invalid login credentials', 'メールアドレスまたはパスワードが正しくありません。'],
   ['Email not confirmed', 'メールアドレスの確認が完了していません。確認メールをご確認ください。'],
   ['Too many requests', 'しばらく時間をおいてから再度お試しください。'],
-  ['User already registered', 'このメールアドレスは既に登録されています。'],
-  ['Network request failed', 'ネットワークに接続できません。通信環境をご確認ください。'],
+  ['too many requests', 'しばらく時間をおいてから再度お試しください。'],
+  ['rate limit', 'しばらく時間をおいてから再度お試しください。'],
+  ['User already registered', 'このメールアドレスはすでに登録されています。'],
+  ['already been registered', 'このメールアドレスはすでに登録されています。'],
+  ['Password should be at least', 'パスワードは6文字以上で入力してください。'],
+  ['Invalid email', '有効なメールアドレスを入力してください。'],
+  ['Network request failed', 'ネットワークエラーが発生しました。接続を確認してください。'],
   ['JWT expired', 'セッションの有効期限が切れました。再度ログインしてください。'],
 ];
 

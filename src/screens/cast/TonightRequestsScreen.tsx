@@ -4,7 +4,7 @@
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,11 +17,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '@/components/common/Avatar';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
-import * as castService from '@/services/castService';
-import { useAuthStore } from '@/store/authStore';
+import {
+  useBroadcastTonightRequests,
+  useReactToBroadcast,
+  useTonightRequests,
+  useUpdateTonightRequestStatus,
+} from '@/hooks/queries/useTonightRequests';
 import type {
   BroadcastTonightRequest,
   CastStackParamList,
@@ -248,110 +254,37 @@ function BroadcastItem({
 // -----------------------------------------------------------
 
 export default function TonightRequestsScreen({ navigation }: Props) {
-  const { user } = useAuthStore();
-
   // タブ
   const [activeTab, setActiveTab] = useState<'direct' | 'broadcast'>('broadcast');
 
-  // 個別リクエスト
-  const [requests, setRequests] = useState<TonightRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 個別リクエスト（取得 + Realtime はフック内）
+  const requestsQuery = useTonightRequests();
+  const requests = requestsQuery.data ?? [];
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const updateStatusMutation = useUpdateTonightRequestStatus();
 
-  // 全体投稿
-  const [broadcastPosts, setBroadcastPosts] = useState<BroadcastTonightRequest[]>([]);
-  const [broadcastLoading, setBroadcastLoading] = useState(true);
+  // 全体投稿（取得 + Realtime はフック内）
+  const broadcastsQuery = useBroadcastTonightRequests();
+  const broadcastPosts = broadcastsQuery.data ?? [];
   const [broadcastProcessingIds, setBroadcastProcessingIds] = useState<Set<string>>(new Set());
   const [composingId, setComposingId] = useState<string | null>(null);
   const [composingText, setComposingText] = useState('');
-
-  // -----------------------------------------------------------
-  // 個別リクエスト取得
-  // -----------------------------------------------------------
-
-  const fetchRequests = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await castService.getTonightRequests(user.id);
-      setRequests(data);
-    } catch {
-      Alert.alert('エラー', 'リクエストの取得に失敗しました。');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  // -----------------------------------------------------------
-  // 全体投稿取得
-  // -----------------------------------------------------------
-
-  const fetchBroadcasts = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await castService.getBroadcastTonightRequests(user.id);
-      setBroadcastPosts(data);
-    } catch {
-      Alert.alert('エラー', '投稿の取得に失敗しました。');
-    } finally {
-      setBroadcastLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchRequests();
-    fetchBroadcasts();
-  }, [fetchRequests, fetchBroadcasts]);
-
-  // -----------------------------------------------------------
-  // Realtime: 個別リクエスト
-  // -----------------------------------------------------------
-
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel('tonight_requests_cast')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tonight_requests',
-        filter: `target_cast_id=eq.${user.id}`,
-      }, () => { fetchRequests(); })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, fetchRequests]);
-
-  // -----------------------------------------------------------
-  // Realtime: 全体投稿（新規追加のみ監視）
-  // -----------------------------------------------------------
-
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel('tonight_broadcasts')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'tonight_requests',
-        filter: 'target_cast_id=is.null',
-      }, () => { fetchBroadcasts(); })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, fetchBroadcasts]);
+  const reactMutation = useReactToBroadcast();
 
   // -----------------------------------------------------------
   // 個別: 承諾
   // -----------------------------------------------------------
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = (requestId: string) => {
     setProcessingIds((prev) => new Set(prev).add(requestId));
-    try {
-      await castService.updateTonightRequestStatus(requestId, 'accepted');
-      setRequests((prev) => prev.map((r) => r.id === requestId ? { ...r, status: 'accepted' } : r));
-    } catch {
-      Alert.alert('エラー', '承諾処理に失敗しました。');
-    } finally {
-      setProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
-    }
+    updateStatusMutation.mutate(
+      { requestId, status: 'accepted' },
+      {
+        onSettled: () => {
+          setProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
+        },
+      },
+    );
   };
 
   // -----------------------------------------------------------
@@ -364,16 +297,16 @@ export default function TonightRequestsScreen({ navigation }: Props) {
       {
         text: '辞退する',
         style: 'destructive',
-        onPress: async () => {
+        onPress: () => {
           setProcessingIds((prev) => new Set(prev).add(requestId));
-          try {
-            await castService.updateTonightRequestStatus(requestId, 'declined');
-            setRequests((prev) => prev.map((r) => r.id === requestId ? { ...r, status: 'declined' } : r));
-          } catch {
-            Alert.alert('エラー', '辞退処理に失敗しました。');
-          } finally {
-            setProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
-          }
+          updateStatusMutation.mutate(
+            { requestId, status: 'declined' },
+            {
+              onSettled: () => {
+                setProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
+              },
+            },
+          );
         },
       },
     ]);
@@ -392,62 +325,50 @@ export default function TonightRequestsScreen({ navigation }: Props) {
   // 全体投稿: 興味あり
   // -----------------------------------------------------------
 
-  const handleInterested = async (requestId: string) => {
-    if (!user) return;
+  const handleInterested = (requestId: string) => {
     setBroadcastProcessingIds((prev) => new Set(prev).add(requestId));
-    try {
-      await castService.reactToBroadcast(requestId, user.id, 'interested');
-      setBroadcastPosts((prev) =>
-        prev.map((p) =>
-          p.id === requestId
-            ? { ...p, my_reaction: { id: '', request_id: requestId, cast_id: user.id, type: 'interested', message: null, created_at: new Date().toISOString() } }
-            : p,
-        ),
-      );
-    } catch {
-      Alert.alert('エラー', '送信に失敗しました。');
-    } finally {
-      setBroadcastProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
-    }
+    reactMutation.mutate(
+      { requestId, type: 'interested' },
+      {
+        onSettled: () => {
+          setBroadcastProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
+        },
+      },
+    );
   };
 
   // -----------------------------------------------------------
   // 全体投稿: メッセージ送信
   // -----------------------------------------------------------
 
-  const handleSendMessage = async (requestId: string) => {
-    if (!user || !composingText.trim()) return;
+  const handleSendMessage = (requestId: string) => {
+    if (!composingText.trim()) return;
     setBroadcastProcessingIds((prev) => new Set(prev).add(requestId));
-    try {
-      await castService.reactToBroadcast(requestId, user.id, 'message', composingText.trim());
-      setBroadcastPosts((prev) =>
-        prev.map((p) =>
-          p.id === requestId
-            ? { ...p, my_reaction: { id: '', request_id: requestId, cast_id: user.id, type: 'message', message: composingText.trim(), created_at: new Date().toISOString() } }
-            : p,
-        ),
-      );
-      setComposingId(null);
-      setComposingText('');
-    } catch {
-      Alert.alert('エラー', '送信に失敗しました。');
-    } finally {
-      setBroadcastProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
-    }
+    reactMutation.mutate(
+      { requestId, type: 'message', message: composingText.trim() },
+      {
+        onSuccess: () => {
+          setComposingId(null);
+          setComposingText('');
+        },
+        onSettled: () => {
+          setBroadcastProcessingIds((prev) => { const next = new Set(prev); next.delete(requestId); return next; });
+        },
+      },
+    );
   };
 
   // -----------------------------------------------------------
   // Render
   // -----------------------------------------------------------
 
-  const isInitialLoading = activeTab === 'direct' ? isLoading : broadcastLoading;
+  const isInitialLoading =
+    activeTab === 'direct' ? requestsQuery.isPending : broadcastsQuery.isPending;
 
   if (isInitialLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.gold} />
-        </View>
+        <SkeletonList />
       </SafeAreaView>
     );
   }
@@ -483,62 +404,68 @@ export default function TonightRequestsScreen({ navigation }: Props) {
       </View>
 
       {/* 個別リクエストタブ */}
-      {activeTab === 'direct' && (
-        <FlatList
-          data={requests}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <RequestItem
-              item={item}
-              onAccept={handleAccept}
-              onDecline={handleDecline}
-              onOpenChat={handleOpenChat}
-              isProcessing={processingIds.has(item.id)}
-            />
-          )}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <MaterialIcons name="nights-stay" size={56} color={COLORS.textMuted} />
-              <Text style={styles.emptyTitle}>まだリクエストがありません</Text>
-              <Text style={styles.emptyDesc}>出勤中にお客様からのリクエストが届きます。</Text>
-            </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {activeTab === 'direct' &&
+        (requestsQuery.isError ? (
+          <ErrorView error={requestsQuery.error} onRetry={requestsQuery.refetch} />
+        ) : (
+          <FlatList
+            data={requests}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <RequestItem
+                item={item}
+                onAccept={handleAccept}
+                onDecline={handleDecline}
+                onOpenChat={handleOpenChat}
+                isProcessing={processingIds.has(item.id)}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <EmptyState
+                icon="nights-stay"
+                title="まだリクエストがありません"
+                description="出勤中にお客様からのリクエストが届きます。"
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        ))}
 
       {/* 全体投稿タブ */}
-      {activeTab === 'broadcast' && (
-        <FlatList
-          data={broadcastPosts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <BroadcastItem
-              item={item}
-              onInterested={handleInterested}
-              onStartMessage={(id) => {
-                setComposingId(id || null);
-                setComposingText('');
-              }}
-              composingId={composingId}
-              composingText={composingText}
-              onComposingTextChange={setComposingText}
-              onSendMessage={handleSendMessage}
-              isProcessing={broadcastProcessingIds.has(item.id)}
-            />
-          )}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <MaterialIcons name="campaign" size={56} color={COLORS.textMuted} />
-              <Text style={styles.emptyTitle}>全体投稿はありません</Text>
-              <Text style={styles.emptyDesc}>お客様が「全キャスト向け」で投稿すると{'\n'}ここに表示されます。</Text>
-            </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {activeTab === 'broadcast' &&
+        (broadcastsQuery.isError ? (
+          <ErrorView error={broadcastsQuery.error} onRetry={broadcastsQuery.refetch} />
+        ) : (
+          <FlatList
+            data={broadcastPosts}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <BroadcastItem
+                item={item}
+                onInterested={handleInterested}
+                onStartMessage={(id) => {
+                  setComposingId(id || null);
+                  setComposingText('');
+                }}
+                composingId={composingId}
+                composingText={composingText}
+                onComposingTextChange={setComposingText}
+                onSendMessage={handleSendMessage}
+                isProcessing={broadcastProcessingIds.has(item.id)}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <EmptyState
+                icon="campaign"
+                title="全体投稿はありません"
+                description={'お客様が「全キャスト向け」で投稿すると\nここに表示されます。'}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        ))}
     </SafeAreaView>
   );
 }
@@ -549,7 +476,6 @@ export default function TonightRequestsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   titleRow: {
     paddingHorizontal: 16,
@@ -754,11 +680,4 @@ const styles = StyleSheet.create({
   sendComposeBtnDisabled: { opacity: 0.4 },
   sendComposeBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.background },
 
-  // 空状態
-  emptyContainer: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 80, gap: 12,
-  },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textSecondary },
-  emptyDesc: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 19 },
 });

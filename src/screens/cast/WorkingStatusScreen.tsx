@@ -19,7 +19,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import WorkStatusToggle from '@/components/cast/WorkStatusToggle';
 import { COLORS } from '@/constants/colors';
-import * as castService from '@/services/castService';
+import {
+  useUpdateLocationSharing,
+  useUpdateWorkStatus,
+} from '@/hooks/queries/useCastWork';
+import { useMyCastProfile } from '@/hooks/queries/useProfile';
 import { useAuthStore } from '@/store/authStore';
 import type { CastStackParamList, WorkStatus } from '@/types';
 
@@ -30,7 +34,7 @@ type Props = NativeStackScreenProps<CastStackParamList, 'WorkingStatus'>;
 // -----------------------------------------------------------
 
 export default function WorkingStatusScreen({ navigation }: Props) {
-  const { user, castProfile, setCastProfile } = useAuthStore();
+  const { user, castProfile } = useAuthStore();
 
   const [workStatus, setWorkStatus] = useState<WorkStatus>(
     castProfile?.work_status ?? 'off',
@@ -38,41 +42,34 @@ export default function WorkingStatusScreen({ navigation }: Props) {
   const [locationEnabled, setLocationEnabled] = useState(
     castProfile?.location_enabled ?? false,
   );
-  const [isStatusLoading, setIsStatusLoading] = useState(false);
-  const [isLocationLoading, setIsLocationLoading] = useState(false);
 
-  // ストアの castProfile が変わったら同期
+  // サーバー上の最新の出勤情報を反映する
+  const { data: castData } = useMyCastProfile();
+
   useEffect(() => {
-    if (castProfile) {
-      setWorkStatus(castProfile.work_status);
-      setLocationEnabled(castProfile.location_enabled);
+    if (castData) {
+      setWorkStatus(castData.work_status);
+      setLocationEnabled(castData.location_enabled);
     }
-  }, [castProfile]);
+  }, [castData]);
+
+  const statusMutation = useUpdateWorkStatus();
+  const locationMutation = useUpdateLocationSharing();
+  const isStatusLoading = statusMutation.isPending;
+  const isLocationLoading = locationMutation.isPending;
 
   // -----------------------------------------------------------
   // 出勤ステータス変更
   // -----------------------------------------------------------
 
-  const handleStatusChange = async (status: WorkStatus) => {
+  const handleStatusChange = (status: WorkStatus) => {
     if (!user || isStatusLoading) return;
     const prev = workStatus;
+    // 楽観的に切り替え、失敗時はロールバックする
     setWorkStatus(status);
-    setIsStatusLoading(true);
-    try {
-      await castService.updateWorkStatus(user.id, status);
-      if (castProfile) {
-        setCastProfile({
-          ...castProfile,
-          work_status: status,
-          is_working: status !== 'off',
-        });
-      }
-    } catch {
-      setWorkStatus(prev);
-      Alert.alert('エラー', 'ステータスの更新に失敗しました。');
-    } finally {
-      setIsStatusLoading(false);
-    }
+    statusMutation.mutate(status, {
+      onError: () => setWorkStatus(prev),
+    });
   };
 
   // -----------------------------------------------------------
@@ -81,38 +78,19 @@ export default function WorkingStatusScreen({ navigation }: Props) {
 
   const handleLocationToggle = async (value: boolean) => {
     if (!user || isLocationLoading) return;
-    setIsLocationLoading(true);
-    try {
-      if (value) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            '位置情報の許可が必要です',
-            '設定アプリから位置情報へのアクセスを許可してください。',
-          );
-          return;
-        }
-        const coords = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        await castService.updateLocation(
-          user.id,
-          coords.coords.latitude,
-          coords.coords.longitude,
-          true,
+    if (value) {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          '位置情報の許可が必要です',
+          '設定アプリから位置情報へのアクセスを許可してください。',
         );
-      } else {
-        await castService.updateLocation(user.id, 0, 0, false);
+        return;
       }
-      setLocationEnabled(value);
-      if (castProfile) {
-        setCastProfile({ ...castProfile, location_enabled: value });
-      }
-    } catch {
-      Alert.alert('エラー', '位置情報の更新に失敗しました。');
-    } finally {
-      setIsLocationLoading(false);
     }
+    locationMutation.mutate(value, {
+      onSuccess: () => setLocationEnabled(value),
+    });
   };
 
   // -----------------------------------------------------------

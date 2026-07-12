@@ -6,7 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -19,9 +19,9 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { DARK_MAP_STYLE } from '@/constants/mapStyle';
-import { supabase } from '@/lib/supabase';
 import Avatar from '@/components/common/Avatar';
 import StatusBadge from '@/components/common/StatusBadge';
+import { useMapCasts } from '@/hooks/queries/useNearbyCasts';
 import { addFootprint } from '@/services/customerService';
 import { useAuthStore } from '@/store/authStore';
 import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
@@ -58,55 +58,17 @@ export default function MapScreen() {
   const { profile } = useAuthStore();
   const mapRef = useRef<MapView>(null);
 
-  const [casts, setCasts] = useState<CastProfileWithUser[]>([]);
   const [selectedCast, setSelectedCast] = useState<CastProfileWithUser | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [workingOnly, setWorkingOnly] = useState(false);
 
   // -----------------------------------------------------------
   // キャスト取得（location_enabled=true、workingOnlyの場合はis_working=trueも条件）
+  // cast_profiles の変更はフック内の Realtime 購読で反映される
   // -----------------------------------------------------------
 
-  const fetchCasts = useCallback(async (onlyWorking: boolean) => {
-    let query = supabase
-      .from('cast_profiles')
-      .select('*, user:users(*)')
-      .eq('location_enabled', true)
-      .not('location_lat', 'is', null)
-      .not('location_lng', 'is', null);
-
-    if (onlyWorking) {
-      query = query.eq('is_working', true);
-    }
-
-    const { data, error } = await query;
-    if (!error && data) {
-      setCasts(data as CastProfileWithUser[]);
-    }
-  }, []);
-
-  // -----------------------------------------------------------
-  // Supabase Realtime 購読（workingOnlyが変わるたびに再購読）
-  // -----------------------------------------------------------
-
-  useEffect(() => {
-    fetchCasts(workingOnly);
-
-    const channel = supabase
-      .channel('cast_profiles_map')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cast_profiles' },
-        () => {
-          fetchCasts(workingOnly);
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchCasts, workingOnly]);
+  const { data } = useMapCasts(workingOnly);
+  const casts = data ?? [];
 
   // -----------------------------------------------------------
   // 現在地へ移動

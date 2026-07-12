@@ -5,7 +5,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,15 +22,12 @@ import {
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
 import {
-  getCastProfile,
-  getCustomerProfile,
-  updateProfile,
-  upsertCastProfile,
-  upsertCustomerProfile,
-} from '@/services/authService';
+  useMyCastProfile,
+  useMyCustomerProfile,
+  useSaveMyProfile,
+} from '@/hooks/queries/useProfile';
 import { useAuthStore } from '@/store/authStore';
-import type { CastProfile, CustomerProfile } from '@/types';
-import { uploadImage } from '@/utils/imageUtils';
+import { showError } from '@/utils/showError';
 
 // -----------------------------------------------------------
 // ラベル付き入力
@@ -181,7 +178,7 @@ const ACTIVITIES_OPTIONS = ['カラオケ', 'ダーツ', 'ゲーム', '飲み比
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
-  const { user, profile, castProfile, setProfile, setCastProfile } = useAuthStore();
+  const { user, profile } = useAuthStore();
 
   const [nickname, setNickname] = useState(profile?.nickname ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -205,7 +202,6 @@ export default function EditProfileScreen() {
   const [customerMessage, setCustomerMessage] = useState('');
   const [hometown, setHometown] = useState('');
   const [motto, setMotto] = useState('');
-  const [localCastProfile, setLocalCastProfile] = useState<CastProfile | null>(castProfile);
 
   // 顧客専用フィールド
   const [customerAge, setCustomerAge] = useState('');
@@ -215,45 +211,47 @@ export default function EditProfileScreen() {
   const [preferredArea, setPreferredArea] = useState('');
   const [appealMessage, setAppealMessage] = useState('');
 
-  const [saving, setSaving] = useState(false);
-
   const isCast = profile?.role === 'cast';
 
-  useEffect(() => {
-    if (!user) return;
+  // サーバー上の既存プロフィールを取得してフォームへ流し込む（初回のみ）
+  const castProfileQuery = useMyCastProfile();
+  const customerProfileQuery = useMyCustomerProfile();
+  const castInitializedRef = useRef(false);
+  const customerInitializedRef = useRef(false);
 
-    if (isCast) {
-      getCastProfile(user.id).then((data) => {
-        setLocalCastProfile(data);
-        setShopName(data.shop_name ?? '');
-        setShopAddress(data.shop_address ?? '');
-        setPriceInfo(data.price_info ?? '');
-        setCastAge(data.age ? String(data.age) : '');
-        setCastHeight(data.height ? String(data.height) : '');
-        setBloodType(data.blood_type ?? '');
-        setCastHobbies(data.hobbies ?? '');
-        setPersonality(data.personality ?? '');
-        setCharmPoint(data.charm_point ?? '');
-        setFavoriteDrink(data.favorite_drink ?? '');
-        setServiceStyle(data.service_style ?? '');
-        setFavoriteTopics(data.favorite_topics ?? '');
-        setActivities(data.activities ?? '');
-        setCustomerMessage(data.customer_message ?? '');
-        setHometown(data.hometown ?? '');
-        setMotto(data.motto ?? '');
-      }).catch(() => {});
-    } else {
-      getCustomerProfile(user.id).then((data) => {
-        if (!data) return;
-        setCustomerAge(data.age ? String(data.age) : '');
-        setOccupation(data.occupation ?? '');
-        setAnnualIncome(data.annual_income ?? '');
-        setHobbies(data.hobbies ?? '');
-        setPreferredArea(data.preferred_area ?? '');
-        setAppealMessage(data.appeal_message ?? '');
-      }).catch(() => {});
-    }
-  }, [isCast, user]);
+  useEffect(() => {
+    const data = castProfileQuery.data;
+    if (!isCast || !data || castInitializedRef.current) return;
+    castInitializedRef.current = true;
+    setShopName(data.shop_name ?? '');
+    setShopAddress(data.shop_address ?? '');
+    setPriceInfo(data.price_info ?? '');
+    setCastAge(data.age ? String(data.age) : '');
+    setCastHeight(data.height ? String(data.height) : '');
+    setBloodType(data.blood_type ?? '');
+    setCastHobbies(data.hobbies ?? '');
+    setPersonality(data.personality ?? '');
+    setCharmPoint(data.charm_point ?? '');
+    setFavoriteDrink(data.favorite_drink ?? '');
+    setServiceStyle(data.service_style ?? '');
+    setFavoriteTopics(data.favorite_topics ?? '');
+    setActivities(data.activities ?? '');
+    setCustomerMessage(data.customer_message ?? '');
+    setHometown(data.hometown ?? '');
+    setMotto(data.motto ?? '');
+  }, [isCast, castProfileQuery.data]);
+
+  useEffect(() => {
+    const data = customerProfileQuery.data;
+    if (isCast || !data || customerInitializedRef.current) return;
+    customerInitializedRef.current = true;
+    setCustomerAge(data.age ? String(data.age) : '');
+    setOccupation(data.occupation ?? '');
+    setAnnualIncome(data.annual_income ?? '');
+    setHobbies(data.hobbies ?? '');
+    setPreferredArea(data.preferred_area ?? '');
+    setAppealMessage(data.appeal_message ?? '');
+  }, [isCast, customerProfileQuery.data]);
 
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -273,66 +271,60 @@ export default function EditProfileScreen() {
     }
   };
 
-  const handleSave = async () => {
-    if (!user) return;
+  const saveMutation = useSaveMyProfile();
+  const saving = saveMutation.isPending;
+
+  const handleSave = () => {
+    if (!user || saving) return;
     if (!nickname.trim()) {
-      Alert.alert('エラー', 'ニックネームを入力してください。');
+      showError('ニックネームを入力してください。');
       return;
     }
-    setSaving(true);
-    try {
-      let avatarUrl = profile?.avatar_url ?? null;
 
-      if (avatarChanged && avatarUri) {
-        avatarUrl = await uploadImage(avatarUri, 'avatars', `${user.id}/avatar.jpg`);
-      }
-
-      const updatedProfile = await updateProfile(user.id, {
+    saveMutation.mutate(
+      {
         nickname: nickname.trim(),
         bio: bio.trim() || null,
-        avatar_url: avatarUrl,
-      });
-      setProfile(updatedProfile);
-
-      if (isCast) {
-        const updatedCast = await upsertCastProfile(user.id, {
-          shop_name: shopName.trim() || null,
-          shop_address: shopAddress.trim() || null,
-          price_info: priceInfo.trim() || null,
-          age: castAge ? parseInt(castAge, 10) : null,
-          height: castHeight ? parseInt(castHeight, 10) : null,
-          blood_type: bloodType || null,
-          hobbies: castHobbies.trim() || null,
-          personality: personality.trim() || null,
-          charm_point: charmPoint.trim() || null,
-          favorite_drink: favoriteDrink.trim() || null,
-          service_style: serviceStyle || null,
-          favorite_topics: favoriteTopics.trim() || null,
-          activities: activities || null,
-          customer_message: customerMessage.trim() || null,
-          hometown: hometown.trim() || null,
-          motto: motto.trim() || null,
-        });
-        setCastProfile(updatedCast);
-      } else {
-        await upsertCustomerProfile(user.id, {
-          age: customerAge ? parseInt(customerAge, 10) : null,
-          occupation: occupation.trim() || null,
-          annual_income: annualIncome || null,
-          hobbies: hobbies.trim() || null,
-          preferred_area: preferredArea.trim() || null,
-          appeal_message: appealMessage.trim() || null,
-        });
-      }
-
-      Alert.alert('完了', 'プロフィールを更新しました。', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '保存に失敗しました。');
-    } finally {
-      setSaving(false);
-    }
+        newAvatarUri: avatarChanged && avatarUri ? avatarUri : null,
+        castFields: isCast
+          ? {
+              shop_name: shopName.trim() || null,
+              shop_address: shopAddress.trim() || null,
+              price_info: priceInfo.trim() || null,
+              age: castAge ? parseInt(castAge, 10) : null,
+              height: castHeight ? parseInt(castHeight, 10) : null,
+              blood_type: bloodType || null,
+              hobbies: castHobbies.trim() || null,
+              personality: personality.trim() || null,
+              charm_point: charmPoint.trim() || null,
+              favorite_drink: favoriteDrink.trim() || null,
+              service_style: serviceStyle || null,
+              favorite_topics: favoriteTopics.trim() || null,
+              activities: activities || null,
+              customer_message: customerMessage.trim() || null,
+              hometown: hometown.trim() || null,
+              motto: motto.trim() || null,
+            }
+          : undefined,
+        customerFields: !isCast
+          ? {
+              age: customerAge ? parseInt(customerAge, 10) : null,
+              occupation: occupation.trim() || null,
+              annual_income: annualIncome || null,
+              hobbies: hobbies.trim() || null,
+              preferred_area: preferredArea.trim() || null,
+              appeal_message: appealMessage.trim() || null,
+            }
+          : undefined,
+      },
+      {
+        onSuccess: () => {
+          Alert.alert('完了', 'プロフィールを更新しました。', [
+            { text: 'OK', onPress: () => navigation.goBack() },
+          ]);
+        },
+      },
+    );
   };
 
   return (

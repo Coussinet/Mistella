@@ -3,7 +3,6 @@
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -21,98 +20,34 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
 import Avatar from '@/components/common/Avatar';
+import EmptyState from '@/components/common/EmptyState';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonCard } from '@/components/common/Skeleton';
 import StatusBadge from '@/components/common/StatusBadge';
+import { useCastSearch } from '@/hooks/queries/useCastSearch';
 import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
 
 // -----------------------------------------------------------
 // 定数
 // -----------------------------------------------------------
 
-const PAGE_SIZE = 20;
-
 const AREAS = ['東京', '大阪', '名古屋', '福岡', '札幌'];
 
 // -----------------------------------------------------------
-// Supabase クエリ
+// スケルトングリッド
 // -----------------------------------------------------------
 
-interface FetchParams {
-  pageParam: number;
-  keyword: string;
-  workingOnly: boolean;
-  area: string | null;
-  shopName: string | null;
-}
-
-async function fetchCasts({
-  pageParam,
-  keyword,
-  workingOnly,
-  area,
-  shopName,
-}: FetchParams): Promise<CastProfileWithUser[]> {
-  const from = pageParam * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-
-  let query = supabase
-    .from('cast_profiles')
-    .select('*, user:users(*)')
-    .range(from, to)
-    .order('is_sponsored', { ascending: false })
-    .order('user_id', { ascending: false });
-
-  if (workingOnly) {
-    query = query.eq('is_working', true);
-  }
-  if (shopName) {
-    query = query.ilike('shop_name', `%${shopName}%`);
-  }
-  if (area) {
-    query = query.ilike('shop_address', `%${area}%`);
-  }
-  if (keyword) {
-    // nicknameはJOINテーブルのため、先にuser_idを取得してOR条件に含める
-    const { data: matchedUsers } = await supabase
-      .from('users')
-      .select('id')
-      .ilike('nickname', `%${keyword}%`);
-    const matchedIds = (matchedUsers ?? []).map((u) => u.id);
-
-    const orParts = [
-      `shop_name.ilike.%${keyword}%`,
-      `shop_address.ilike.%${keyword}%`,
-      `hobbies.ilike.%${keyword}%`,
-      `personality.ilike.%${keyword}%`,
-      `charm_point.ilike.%${keyword}%`,
-      `customer_message.ilike.%${keyword}%`,
-      `favorite_topics.ilike.%${keyword}%`,
-      `activities.ilike.%${keyword}%`,
-    ];
-    if (matchedIds.length > 0) {
-      orParts.push(`user_id.in.(${matchedIds.join(',')})`);
-    }
-    query = query.or(orParts.join(','));
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []) as CastProfileWithUser[];
-}
-
-// -----------------------------------------------------------
-// スケルトンカード
-// -----------------------------------------------------------
-
-function SkeletonCard() {
+function SkeletonGrid() {
   return (
-    <View style={styles.skeletonCard}>
-      <View style={styles.skeletonAvatar} />
-      <View style={styles.skeletonLine} />
-      <View style={[styles.skeletonLine, styles.skeletonLineShort]} />
+    <View style={styles.skeletonGrid}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <View key={i} style={styles.skeletonItem}>
+          <SkeletonCard />
+        </View>
+      ))}
     </View>
   );
 }
@@ -193,20 +128,13 @@ export default function CastSearchScreen() {
     isFetchingNextPage,
     isLoading,
     isError,
+    error,
     refetch,
-  } = useInfiniteQuery({
-    queryKey: ['casts', keyword, workingOnly, selectedArea, shopKeyword],
-    queryFn: ({ pageParam }) =>
-      fetchCasts({
-        pageParam: pageParam as number,
-        keyword,
-        workingOnly,
-        area: selectedArea,
-        shopName: shopKeyword || null,
-      }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.length === PAGE_SIZE ? allPages.length : undefined,
+  } = useCastSearch({
+    keyword,
+    workingOnly,
+    area: selectedArea,
+    shopName: shopKeyword || null,
   });
 
   const casts = useMemo(
@@ -249,23 +177,9 @@ export default function CastSearchScreen() {
     );
   };
 
-  const renderEmpty = () => {
-    if (isLoading) {
-      return (
-        <View style={styles.skeletonGrid}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </View>
-      );
-    }
-    return (
-      <View style={styles.emptyContainer}>
-        <MaterialIcons name="search-off" size={48} color={COLORS.textMuted} />
-        <Text style={styles.emptyText}>該当するキャストが見つかりません</Text>
-      </View>
-    );
-  };
+  const renderEmpty = () => (
+    <EmptyState icon="search-off" title="該当するキャストが見つかりません" />
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={[]}>
@@ -368,23 +282,11 @@ export default function CastSearchScreen() {
         </View>
       </ScrollView>
 
-      {/* エラー */}
-      {isError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>読み込みに失敗しました</Text>
-          <TouchableOpacity onPress={() => refetch()}>
-            <Text style={styles.retryText}>再試行</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
       {/* キャスト一覧 */}
-      {isLoading ? (
-        <View style={styles.skeletonGrid}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </View>
+      {isError ? (
+        <ErrorView error={error} onRetry={refetch} />
+      ) : isLoading ? (
+        <SkeletonGrid />
       ) : (
         <FlatList
           data={casts}
@@ -613,70 +515,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    gap: 12,
   },
-  skeletonCard: {
-    flex: 1,
-    minWidth: '44%',
-    maxWidth: '48%',
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  skeletonAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: COLORS.surfaceLight,
-  },
-  skeletonLine: {
-    width: '80%',
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.surfaceLight,
-  },
-  skeletonLineShort: {
-    width: '55%',
+  skeletonItem: {
+    width: '50%',
   },
 
   // フッターローダー
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
-  },
-
-  // 空状態
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-    gap: 12,
-  },
-  emptyText: {
-    color: COLORS.textMuted,
-    fontSize: 14,
-  },
-
-  // エラー
-  errorContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    gap: 8,
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-  },
-  retryText: {
-    color: COLORS.gold,
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 
   // エリアモーダル

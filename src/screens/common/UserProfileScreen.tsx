@@ -20,26 +20,19 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { supabase } from '@/lib/supabase';
-import { getProfile } from '@/services/authService';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
 import {
-  addFavorite,
-  addFootprint,
-  isFavorite,
-  removeFavorite,
-  sendTonightRequest,
-} from '@/services/customerService';
-import { blockUser, reportUser } from '@/services/blockService';
-import { sendLike } from '@/services/matchService';
-import { getMyTimelines } from '@/services/timelineService';
+  useBlockUser,
+  useRecordFootprint,
+  useReportUser,
+  useSendLike,
+  useSendTonightRequest,
+  useToggleFavorite,
+  useUserProfile,
+} from '@/hooks/queries/useUserProfile';
 import { useAuthStore } from '@/store/authStore';
-import type {
-  CastProfile,
-  ReportReason,
-  Timeline,
-  User,
-} from '@/types';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import type { ReportReason, Timeline } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (SCREEN_WIDTH - 4) / 3;
@@ -99,23 +92,22 @@ type TonightModalProps = {
 };
 
 function TonightModal({ visible, castId, onClose }: TonightModalProps) {
-  const { user } = useAuthStore();
   const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
+  const sendMutation = useSendTonightRequest();
+  const sending = sendMutation.isPending;
 
-  const handleSend = async () => {
-    if (!user) return;
-    setSending(true);
-    try {
-      await sendTonightRequest(user.id, castId, message.trim() || undefined);
-      Alert.alert('送信完了', 'リクエストを送りました！');
-      setMessage('');
-      onClose();
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '送信に失敗しました。');
-    } finally {
-      setSending(false);
-    }
+  const handleSend = () => {
+    if (sending) return;
+    sendMutation.mutate(
+      { castId, message: message.trim() || undefined },
+      {
+        onSuccess: () => {
+          Alert.alert('送信完了', 'リクエストを送りました！');
+          setMessage('');
+          onClose();
+        },
+      },
+    );
   };
 
   return (
@@ -242,30 +234,24 @@ const REPORT_REASONS: { value: ReportReason; label: string }[] = [
 ];
 
 function ReportModal({ visible, targetUserId, onClose }: ReportModalProps) {
-	const { user } = useAuthStore();
 	const [reason, setReason] = useState<ReportReason | null>(null);
 	const [detail, setDetail] = useState('');
-	const [sending, setSending] = useState(false);
+	const reportMutation = useReportUser();
+	const sending = reportMutation.isPending;
 
-	const handleSend = async () => {
-		if (!user || !reason) return;
-		setSending(true);
-		try {
-			await reportUser({
-				reporterId: user.id,
-				reportedUserId: targetUserId,
-				reason,
-				detail: detail.trim() || undefined,
-			});
-			Alert.alert('通報完了', '通報を受け付けました。ご協力ありがとうございます。');
-			setReason(null);
-			setDetail('');
-			onClose();
-		} catch {
-			Alert.alert('エラー', '通報に失敗しました。');
-		} finally {
-			setSending(false);
-		}
+	const handleSend = () => {
+		if (!reason || sending) return;
+		reportMutation.mutate(
+			{ targetUserId, reason, detail: detail.trim() || undefined },
+			{
+				onSuccess: () => {
+					Alert.alert('通報完了', '通報を受け付けました。ご協力ありがとうございます。');
+					setReason(null);
+					setDetail('');
+					onClose();
+				},
+			},
+		);
 	};
 
 	return (
@@ -351,94 +337,52 @@ export default function UserProfileScreen() {
   const { userId } = route.params as RouteParams;
   const { user: currentUser, profile: currentProfile } = useAuthStore();
 
-  const [targetUser, setTargetUser] = useState<User | null>(null);
-  const [castProfile, setCastProfile] = useState<CastProfile | null>(null);
-  const [timelines, setTimelines] = useState<Timeline[]>([]);
-  const [liked, setLiked] = useState(false);
-  const [favorited, setFavorited] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [liking, setLiking] = useState(false);
-  const [favoritingAction, setFavoritingAction] = useState(false);
   const [tonightModalVisible, setTonightModalVisible] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
 
-  const loadData = useCallback(async () => {
-    if (!currentUser) return;
-    setLoading(true);
-    try {
-      const [userProfile, timelineData] = await Promise.all([
-        getProfile(userId),
-        getMyTimelines(userId),
-      ]);
-      setTargetUser(userProfile);
-      setTimelines(timelineData);
+  const {
+    targetUser,
+    castProfile,
+    timelines,
+    liked,
+    favorited,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useUserProfile(userId);
 
-      // キャストプロフィール取得
-      if (userProfile.role === 'cast') {
-        const { data } = await supabase
-          .from('cast_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-        setCastProfile(data as CastProfile | null);
-      }
+  // 足跡を残す（自分自身は除く）
+  useRecordFootprint(userId);
 
-      // お気に入り確認
-      const fav = await isFavorite(currentUser.id, userId);
-      setFavorited(fav);
+  const likeMutation = useSendLike(userId);
+  const favoriteMutation = useToggleFavorite(userId);
+  const blockMutation = useBlockUser();
 
-      // 足跡を残す（自分自身は除く）
-      if (currentUser.id !== userId) {
-        await addFootprint(currentUser.id, userId);
-      }
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '読み込みに失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, currentUser]);
+  const liking = likeMutation.isPending;
+  const favoritingAction = favoriteMutation.isPending;
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleLike = async () => {
+  const handleLike = () => {
     if (!currentUser || liking) return;
-    setLiking(true);
-    try {
-      const { matched } = await sendLike(currentUser.id, userId);
-      setLiked(true);
-      if (matched) {
-        Alert.alert('マッチング成立！', 'マッチングしました！チャットを始めましょう。');
-      } else {
-        Alert.alert('いいね！', 'いいねを送りました。');
-      }
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : 'いいねに失敗しました。');
-    } finally {
-      setLiking(false);
-    }
+    likeMutation.mutate(undefined, {
+      onSuccess: ({ matched }) => {
+        if (matched) {
+          Alert.alert('マッチング成立！', 'マッチングしました！チャットを始めましょう。');
+        } else {
+          Alert.alert('いいね！', 'いいねを送りました。');
+        }
+      },
+    });
   };
 
-  const handleFavorite = async () => {
+  const handleFavorite = () => {
     if (!currentUser || favoritingAction) return;
-    setFavoritingAction(true);
-    try {
-      if (favorited) {
-        await removeFavorite(currentUser.id, userId);
-        setFavorited(false);
-      } else {
-        await addFavorite(currentUser.id, userId);
-        setFavorited(true);
-      }
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '操作に失敗しました。');
-    } finally {
-      setFavoritingAction(false);
-    }
+    favoriteMutation.mutate(!favorited);
   };
 
   const navigation = useNavigation();
+
+  const { mutate: blockUserMutate } = blockMutation;
 
   const handleBlock = useCallback(() => {
     if (!currentUser) return;
@@ -450,20 +394,19 @@ export default function UserProfileScreen() {
         {
           text: 'ブロック',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await blockUser(currentUser.id, userId);
-              Alert.alert('ブロックしました', '', [
-                { text: 'OK', onPress: () => navigation.goBack() },
-              ]);
-            } catch {
-              Alert.alert('エラー', 'ブロックに失敗しました。');
-            }
+          onPress: () => {
+            blockUserMutate(userId, {
+              onSuccess: () => {
+                Alert.alert('ブロックしました', '', [
+                  { text: 'OK', onPress: () => navigation.goBack() },
+                ]);
+              },
+            });
           },
         },
       ],
     );
-  }, [currentUser, userId, navigation]);
+  }, [currentUser, userId, navigation, blockUserMutate]);
 
   useEffect(() => {
     if (currentUser?.id === userId) return;
@@ -485,12 +428,16 @@ export default function UserProfileScreen() {
     });
   }, [userId, currentUser, navigation, handleBlock]);
 
-  if (loading) {
+  if (isPending) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+      <View style={styles.container}>
+        <SkeletonList />
       </View>
     );
+  }
+
+  if (isError) {
+    return <ErrorView error={error} onRetry={refetch} />;
   }
 
   if (!targetUser) {

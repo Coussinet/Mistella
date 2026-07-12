@@ -19,24 +19,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { resetPassword } from '@/services/authService';
+import { toErrorMessage } from '@/utils/showError';
 import type { AuthStackParamList } from '@/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
-
-// -----------------------------------------------------------
-// エラーメッセージの日本語化
-// -----------------------------------------------------------
-
-function translateError(message: string): string {
-  if (message.includes('Network request failed') || message.includes('fetch')) {
-    return 'ネットワークエラーが発生しました。接続を確認してください。';
-  }
-  if (message.includes('rate limit') || message.includes('Too many requests')) {
-    return 'しばらく時間をおいてから再度お試しください。';
-  }
-  return 'エラーが発生しました。しばらくしてから再度お試しください。';
-}
 
 // -----------------------------------------------------------
 // ForgotPasswordScreen
@@ -62,22 +49,11 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     setIsLoading(true);
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email.trim(),
-        {
-          // リダイレクト先（アプリのディープリンクに合わせて変更してください）
-          redirectTo: 'mistella://reset-password',
-        },
-      );
-
-      if (resetError) {
-        setError(translateError(resetError.message));
-        return;
-      }
-
+      // リダイレクト先はアプリのディープリンクに合わせて変更する
+      await resetPassword(email.trim(), 'mistella://reset-password');
       setIsSent(true);
     } catch (e) {
-      setError('予期せぬエラーが発生しました。');
+      setError(toErrorMessage(e, '予期せぬエラーが発生しました。'));
     } finally {
       setIsLoading(false);
     }

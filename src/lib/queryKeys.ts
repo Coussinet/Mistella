@@ -14,11 +14,18 @@ export const queryKeys = {
     search: (filters: Record<string, unknown>) => ['casts', 'search', filters] as const,
     nearby: (lat: number, lng: number, radiusKm: number, onlyWorking: boolean) =>
       ['casts', 'nearby', { lat, lng, radiusKm, onlyWorking }] as const,
+    /** マップ表示用（invalidate はプレフィックス mapAll を使う） */
+    mapAll: () => ['casts', 'map'] as const,
+    map: (onlyWorking: boolean) => ['casts', 'map', { onlyWorking }] as const,
+    /** 今夜行ける！送信画面の現在地周辺キャスト（座標は queryFn 内で取得するためキーに含めない） */
+    nearbyTonight: () => ['casts', 'nearbyTonight'] as const,
     detail: (userId: string) => ['casts', 'detail', userId] as const,
   },
   profile: (userId: string) => ['profile', userId] as const,
   customerProfile: (userId: string) => ['customerProfile', userId] as const,
   favorites: (userId: string) => ['favorites', userId] as const,
+  favoriteStatus: (userId: string, targetUserId: string) =>
+    ['favoriteStatus', userId, targetUserId] as const,
   footprints: (userId: string) => ['footprints', userId] as const,
   matches: (userId: string) => ['matches', userId] as const,
   messages: (matchId: string) => ['messages', matchId] as const,

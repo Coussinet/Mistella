@@ -18,7 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '@/components/common/Button';
 import { COLORS } from '@/constants/colors';
-import * as authService from '@/services/authService';
+import { useUpdateShopInfo } from '@/hooks/queries/useCastWork';
+import { useMyCastProfile } from '@/hooks/queries/useProfile';
 import { useAuthStore } from '@/store/authStore';
 import type { CastStackParamList } from '@/types';
 
@@ -29,43 +30,46 @@ type Props = NativeStackScreenProps<CastStackParamList, 'ShopInfo'>;
 // -----------------------------------------------------------
 
 export default function ShopInfoScreen({ navigation }: Props) {
-  const { user, castProfile, setCastProfile } = useAuthStore();
+  const { user, castProfile } = useAuthStore();
 
   const [shopName, setShopName] = useState(castProfile?.shop_name ?? '');
   const [shopAddress, setShopAddress] = useState(castProfile?.shop_address ?? '');
   const [priceInfo, setPriceInfo] = useState(castProfile?.price_info ?? '');
-  const [isSaving, setIsSaving] = useState(false);
+
+  // サーバー上の最新の店舗情報をフォームへ反映する
+  const { data: castData } = useMyCastProfile();
 
   useEffect(() => {
-    if (castProfile) {
-      setShopName(castProfile.shop_name ?? '');
-      setShopAddress(castProfile.shop_address ?? '');
-      setPriceInfo(castProfile.price_info ?? '');
+    if (castData) {
+      setShopName(castData.shop_name ?? '');
+      setShopAddress(castData.shop_address ?? '');
+      setPriceInfo(castData.price_info ?? '');
     }
-  }, [castProfile]);
+  }, [castData]);
 
   // -----------------------------------------------------------
   // 保存処理
   // -----------------------------------------------------------
 
-  const handleSave = async () => {
-    if (!user) return;
-    setIsSaving(true);
-    try {
-      const updated = await authService.upsertCastProfile(user.id, {
+  const saveMutation = useUpdateShopInfo();
+  const isSaving = saveMutation.isPending;
+
+  const handleSave = () => {
+    if (!user || isSaving) return;
+    saveMutation.mutate(
+      {
         shop_name: shopName.trim() || null,
         shop_address: shopAddress.trim() || null,
         price_info: priceInfo.trim() || null,
-      });
-      setCastProfile(updated);
-      Alert.alert('保存完了', '店舗情報を保存しました。', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch {
-      Alert.alert('エラー', '店舗情報の保存に失敗しました。');
-    } finally {
-      setIsSaving(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          Alert.alert('保存完了', '店舗情報を保存しました。', [
+            { text: 'OK', onPress: () => navigation.goBack() },
+          ]);
+        },
+      },
+    );
   };
 
   // -----------------------------------------------------------

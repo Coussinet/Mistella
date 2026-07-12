@@ -19,34 +19,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { signUp } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
+import { toErrorMessage } from '@/utils/showError';
 import type { AuthStackParamList, UserRole } from '@/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
-
-// -----------------------------------------------------------
-// エラーメッセージの日本語化
-// -----------------------------------------------------------
-
-function translateError(message: string): string {
-  if (message.includes('User already registered') || message.includes('already been registered')) {
-    return 'このメールアドレスはすでに登録されています。';
-  }
-  if (message.includes('Password should be at least')) {
-    return 'パスワードは6文字以上で入力してください。';
-  }
-  if (message.includes('Invalid email')) {
-    return '有効なメールアドレスを入力してください。';
-  }
-  if (message.includes('Network request failed') || message.includes('fetch')) {
-    return 'ネットワークエラーが発生しました。接続を確認してください。';
-  }
-  if (message.includes('rate limit') || message.includes('too many requests')) {
-    return '短時間に何度も試行されました。しばらく時間をおいてから再度お試しください。';
-  }
-  return 'エラーが発生しました。しばらくしてから再度お試しください。';
-}
 
 // -----------------------------------------------------------
 // RegisterScreen
@@ -90,35 +68,21 @@ export default function RegisterScreen({ navigation }: Props) {
     setIsLoading(true);
 
     try {
-      // 1. Supabase Auth でユーザー作成（role・nickname をメタデータとして渡す）
-      //    DBトリガー on_auth_user_created が users / cast_profiles を自動作成する
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
+      // Supabase Auth でユーザー作成（role・nickname をメタデータとして渡す）
+      // DBトリガー on_auth_user_created が users / cast_profiles を自動作成する
+      const { session, user } = await signUp(
+        email.trim(),
         password,
-        options: {
-          data: {
-            role,
-            nickname: nickname.trim(),
-          },
-        },
-      });
+        nickname.trim(),
+        role!,
+      );
 
-      if (authError) {
-        setError(translateError(authError.message));
-        return;
-      }
-
-      if (!authData.user) {
-        setError('アカウントの作成に失敗しました。');
-        return;
-      }
-
-      // 2. セッション設定（メール確認不要なら即座にログイン）
-      if (authData.session) {
-        setSession(authData.session);
-        setUser(authData.user);
+      // セッション設定（メール確認不要なら即座にログイン）
+      if (session) {
+        setSession(session);
+        setUser(user);
         setProfile({
-          id: authData.user.id,
+          id: user.id,
           role: role!,
           nickname: nickname.trim(),
           avatar_url: null,
@@ -131,7 +95,7 @@ export default function RegisterScreen({ navigation }: Props) {
         navigation.navigate('Login');
       }
     } catch (e) {
-      setError('予期せぬエラーが発生しました。');
+      setError(toErrorMessage(e, '予期せぬエラーが発生しました。'));
     } finally {
       setIsLoading(false);
     }

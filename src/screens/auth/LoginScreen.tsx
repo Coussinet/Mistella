@@ -20,31 +20,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { signIn } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
-import type { AuthStackParamList, User } from '@/types';
+import { toErrorMessage } from '@/utils/showError';
+import type { AuthStackParamList } from '@/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
-
-// -----------------------------------------------------------
-// エラーメッセージの日本語化
-// -----------------------------------------------------------
-
-function translateError(message: string): string {
-  if (message.includes('Invalid login credentials')) {
-    return 'メールアドレスまたはパスワードが正しくありません。';
-  }
-  if (message.includes('Email not confirmed')) {
-    return 'メールアドレスの確認が完了していません。確認メールをご確認ください。';
-  }
-  if (message.includes('Too many requests')) {
-    return 'しばらく時間をおいてから再度お試しください。';
-  }
-  if (message.includes('Network request failed') || message.includes('fetch')) {
-    return 'ネットワークエラーが発生しました。接続を確認してください。';
-  }
-  return 'エラーが発生しました。しばらくしてから再度お試しください。';
-}
 
 // -----------------------------------------------------------
 // LoginScreen
@@ -69,33 +50,12 @@ export default function LoginScreen({ navigation }: Props) {
     setIsLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (authError) {
-        setError(translateError(authError.message));
-        return;
-      }
-
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.user);
-
-        // プロフィール取得
-        const { data: profileData, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!profileError && profileData) {
-          setProfile(profileData as unknown as User);
-        }
-      }
+      const { session, user, profile } = await signIn(email.trim(), password);
+      setSession(session);
+      setUser(user);
+      if (profile) setProfile(profile);
     } catch (e) {
-      setError('予期せぬエラーが発生しました。');
+      setError(toErrorMessage(e, '予期せぬエラーが発生しました。'));
     } finally {
       setIsLoading(false);
     }

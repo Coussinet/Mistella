@@ -5,32 +5,31 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { getProfile } from '@/services/authService';
-import { getFavorites, getFootprints } from '@/services/customerService';
-import { getMyTimelines } from '@/services/timelineService';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
+import { useFavorites } from '@/hooks/queries/useFavorites';
+import { useFootprints } from '@/hooks/queries/useFootprints';
+import { useMyCastProfile, useMyProfile } from '@/hooks/queries/useProfile';
+import { useUserTimelines } from '@/hooks/queries/useTimelines';
 import { useAuthStore } from '@/store/authStore';
 import type {
-  CastProfile,
   CastStackParamList,
   CustomerStackParamList,
   Timeline,
 } from '@/types';
-import { formatRelativeTime } from '@/utils/dateUtils';
-import { supabase } from '@/lib/supabase';
+import { showError } from '@/utils/showError';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_ITEM_SIZE = (SCREEN_WIDTH - 4) / 3;
@@ -83,50 +82,44 @@ function GridItem({ item }: { item: Timeline }) {
 // -----------------------------------------------------------
 
 export default function ProfileScreen() {
-  const { user, profile, castProfile, signOut, setProfile } = useAuthStore();
+  const { user, profile, signOut } = useAuthStore();
   const navigation = useNavigation<
     NativeStackNavigationProp<CastStackParamList & CustomerStackParamList>
   >();
 
-  const [timelines, setTimelines] = useState<Timeline[]>([]);
-  const [footprintCount, setFootprintCount] = useState(0);
-  const [favoriteCount, setFavoriteCount] = useState(0);
-  const [castData, setCastData] = useState<CastProfile | null>(castProfile);
-  const [loading, setLoading] = useState(true);
+  // プロフィール（取得成功時に authStore と同期される）
+  const profileQuery = useMyProfile();
+  const castQuery = useMyCastProfile();
+  const timelinesQuery = useUserTimelines(user?.id);
+  const footprintsQuery = useFootprints();
+  const favoritesQuery = useFavorites();
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const [timelineData, footprints, favorites, freshProfile] = await Promise.all([
-        getMyTimelines(user.id),
-        getFootprints(user.id),
-        getFavorites(user.id),
-        getProfile(user.id),
-      ]);
-      setTimelines(timelineData);
-      setFootprintCount(footprints.length);
-      setFavoriteCount(favorites.length);
-      setProfile(freshProfile);
+  const timelines = timelinesQuery.data ?? [];
+  const footprintCount = footprintsQuery.data?.length ?? 0;
+  const favoriteCount = favoritesQuery.data?.favorites.length ?? 0;
+  const castData = castQuery.data ?? null;
 
-      if (freshProfile.role === 'cast') {
-        const { data } = await supabase
-          .from('cast_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        setCastData(data as CastProfile | null);
-      }
-    } catch (e: unknown) {
-      Alert.alert('エラー', e instanceof Error ? e.message : '読み込みに失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  }, [user, setProfile]);
+  const isPending =
+    profileQuery.isPending ||
+    timelinesQuery.isPending ||
+    footprintsQuery.isPending ||
+    favoritesQuery.isPending ||
+    (profile?.role === 'cast' && castQuery.isPending);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const isError =
+    profileQuery.isError ||
+    timelinesQuery.isError ||
+    footprintsQuery.isError ||
+    favoritesQuery.isError ||
+    castQuery.isError;
+
+  const handleRetry = () => {
+    if (profileQuery.isError) profileQuery.refetch();
+    if (timelinesQuery.isError) timelinesQuery.refetch();
+    if (footprintsQuery.isError) footprintsQuery.refetch();
+    if (favoritesQuery.isError) favoritesQuery.refetch();
+    if (castQuery.isError) castQuery.refetch();
+  };
 
   const handleSignOut = async () => {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
@@ -138,7 +131,7 @@ export default function ProfileScreen() {
           try {
             await signOut();
           } catch (e: unknown) {
-            Alert.alert('エラー', e instanceof Error ? e.message : 'ログアウトに失敗しました。');
+            showError(e, 'ログアウトに失敗しました。');
           }
         },
       },
@@ -149,11 +142,26 @@ export default function ProfileScreen() {
     navigation.navigate('EditProfile');
   };
 
-  if (loading) {
+  if (isPending) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+      <View style={styles.container}>
+        <SkeletonList />
       </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorView
+        error={
+          profileQuery.error ??
+          timelinesQuery.error ??
+          footprintsQuery.error ??
+          favoritesQuery.error ??
+          castQuery.error
+        }
+        onRetry={handleRetry}
+      />
     );
   }
 
@@ -268,12 +276,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   listContent: {
     paddingBottom: 32,

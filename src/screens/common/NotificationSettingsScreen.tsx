@@ -1,19 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-	ActivityIndicator,
-	Alert,
-	ScrollView,
-	StyleSheet,
-	Switch,
-	Text,
-	View,
-} from 'react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import ErrorView from '@/components/common/ErrorView';
+import { SkeletonList } from '@/components/common/Skeleton';
 import {
-	getNotificationSettings,
-	updateNotificationSettings,
-} from '@/services/notificationService';
-import { useAuthStore } from '@/store/authStore';
+	useNotificationSettings,
+	useUpdateNotificationSettings,
+} from '@/hooks/queries/useNotificationSettings';
 import type { NotificationSettingsKeys } from '@/types';
 
 type SettingItem = {
@@ -31,48 +24,31 @@ const SETTINGS: SettingItem[] = [
 ];
 
 export default function NotificationSettingsScreen() {
-	const { user } = useAuthStore();
-	const [settings, setSettings] = useState<NotificationSettingsKeys | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [updating, setUpdating] = useState<keyof NotificationSettingsKeys | null>(null);
+	const { data: settings, isPending, isError, error, refetch } =
+		useNotificationSettings();
+	const updateMutation = useUpdateNotificationSettings();
 
-	const loadSettings = useCallback(async () => {
-		if (!user) return;
-		try {
-			const data = await getNotificationSettings(user.id);
-			setSettings(data);
-		} catch {
-			Alert.alert('エラー', '設定の読み込みに失敗しました。');
-		} finally {
-			setLoading(false);
-		}
-	}, [user]);
+	// optimistic update 中のキー（該当トグルのみ無効化する）
+	const updatingKey =
+		updateMutation.isPending && updateMutation.variables
+			? (Object.keys(updateMutation.variables)[0] as keyof NotificationSettingsKeys)
+			: null;
 
-	useEffect(() => {
-		loadSettings();
-	}, [loadSettings]);
-
-	const handleToggle = async (key: keyof NotificationSettingsKeys, value: boolean) => {
-		if (!user || !settings) return;
-		setUpdating(key);
-		const prev = { ...settings };
-		setSettings({ ...settings, [key]: value });
-		try {
-			await updateNotificationSettings(user.id, { [key]: value });
-		} catch {
-			setSettings(prev);
-			Alert.alert('エラー', '設定の更新に失敗しました。');
-		} finally {
-			setUpdating(null);
-		}
+	const handleToggle = (key: keyof NotificationSettingsKeys, value: boolean) => {
+		if (!settings || updatingKey === key) return;
+		updateMutation.mutate({ [key]: value });
 	};
 
-	if (loading) {
+	if (isPending) {
 		return (
-			<View style={styles.center}>
-				<ActivityIndicator size="large" color={COLORS.gold} />
+			<View style={styles.container}>
+				<SkeletonList count={5} />
 			</View>
 		);
+	}
+
+	if (isError) {
+		return <ErrorView error={error} onRetry={refetch} />;
 	}
 
 	if (!settings) {
@@ -98,7 +74,7 @@ export default function NotificationSettingsScreen() {
 					<Switch
 						value={settings[item.key]}
 						onValueChange={(v) => handleToggle(item.key, v)}
-						disabled={updating === item.key}
+						disabled={updatingKey === item.key}
 						trackColor={{ false: COLORS.border, true: COLORS.gold }}
 						thumbColor={COLORS.text}
 					/>

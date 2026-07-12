@@ -7,6 +7,7 @@ import type {
   BroadcastReactionType,
   BroadcastTonightRequest,
   CastProfile,
+  CastProfileWithUser,
   CustomerNote,
   TonightRequest,
   WorkStatus,
@@ -331,6 +332,145 @@ export async function getReminderCustomers(
 }
 
 // -----------------------------------------------------------
+// キャスト検索（顧客向け）
+// -----------------------------------------------------------
+
+export const CAST_SEARCH_PAGE_SIZE = 20;
+
+export type CastSearchFilters = {
+  keyword: string;
+  workingOnly: boolean;
+  area: string | null;
+  shopName: string | null;
+};
+
+/**
+ * キャストを条件検索する（ページング付き）。
+ * keyword はニックネーム（users 側を先引き）+ プロフィール各項目の横断検索。
+ */
+export async function searchCasts(
+  filters: CastSearchFilters,
+  page: number,
+): Promise<CastProfileWithUser[]> {
+  const { keyword, workingOnly, area, shopName } = filters;
+  const from = page * CAST_SEARCH_PAGE_SIZE;
+  const to = from + CAST_SEARCH_PAGE_SIZE - 1;
+
+  let query = supabase
+    .from('cast_profiles')
+    .select('*, user:users(*)')
+    .range(from, to)
+    .order('is_sponsored', { ascending: false })
+    .order('user_id', { ascending: false });
+
+  if (workingOnly) {
+    query = query.eq('is_working', true);
+  }
+  if (shopName) {
+    query = query.ilike('shop_name', `%${shopName}%`);
+  }
+  if (area) {
+    query = query.ilike('shop_address', `%${area}%`);
+  }
+  if (keyword) {
+    // nicknameはJOINテーブルのため、先にuser_idを取得してOR条件に含める
+    const { data: matchedUsers } = await supabase
+      .from('users')
+      .select('id')
+      .ilike('nickname', `%${keyword}%`);
+    const matchedIds = (matchedUsers ?? []).map((u) => u.id);
+
+    const orParts = [
+      `shop_name.ilike.%${keyword}%`,
+      `shop_address.ilike.%${keyword}%`,
+      `hobbies.ilike.%${keyword}%`,
+      `personality.ilike.%${keyword}%`,
+      `charm_point.ilike.%${keyword}%`,
+      `customer_message.ilike.%${keyword}%`,
+      `favorite_topics.ilike.%${keyword}%`,
+      `activities.ilike.%${keyword}%`,
+    ];
+    if (matchedIds.length > 0) {
+      orParts.push(`user_id.in.(${matchedIds.join(',')})`);
+    }
+    query = query.or(orParts.join(','));
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as CastProfileWithUser[];
+}
+
+/** 店舗名の部分一致でキャストを検索する（今夜行ける！送信画面用）。 */
+export async function searchCastsByShopName(
+  q: string,
+  limit = 10,
+): Promise<CastProfileWithUser[]> {
+  const { data, error } = await supabase
+    .from('cast_profiles')
+    .select('*, user:users(*)')
+    .ilike('shop_name', `%${q}%`)
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as CastProfileWithUser[];
+}
+
+// -----------------------------------------------------------
+// マップ表示用キャスト取得
+// -----------------------------------------------------------
+
+/**
+ * マップに表示するキャストを取得する。
+ * location_enabled=true かつ位置情報あり。onlyWorking の場合は is_working=true も条件。
+ */
+export async function getNearbyCastsForMap(
+  onlyWorking: boolean,
+): Promise<CastProfileWithUser[]> {
+  let query = supabase
+    .from('cast_profiles')
+    .select('*, user:users(*)')
+    .eq('location_enabled', true)
+    .not('location_lat', 'is', null)
+    .not('location_lng', 'is', null);
+
+  if (onlyWorking) {
+    query = query.eq('is_working', true);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as CastProfileWithUser[];
+}
+
+// -----------------------------------------------------------
+// 現在地周辺の出勤中キャスト取得
+// -----------------------------------------------------------
+
+/**
+ * 現在地から緯度経度 ±radiusDeg 度（矩形）以内の出勤中キャストを取得する。
+ * デフォルト 0.05 度 ≈ 約 5km。
+ */
+export async function getNearbyWorkingCasts(
+  lat: number,
+  lng: number,
+  radiusDeg = 0.05,
+): Promise<CastProfileWithUser[]> {
+  const { data, error } = await supabase
+    .from('cast_profiles')
+    .select('*, user:users(*)')
+    .eq('is_working', true)
+    .eq('location_enabled', true)
+    .gte('location_lat', lat - radiusDeg)
+    .lte('location_lat', lat + radiusDeg)
+    .gte('location_lng', lng - radiusDeg)
+    .lte('location_lng', lng + radiusDeg);
+
+  if (error) throw error;
+  return (data ?? []) as CastProfileWithUser[];
+}
+
+// -----------------------------------------------------------
 // キャストプロフィール一括取得
 // -----------------------------------------------------------
 
@@ -361,4 +501,18 @@ export async function getCastProfileByUserId(
 
   if (error) throw error;
   return (data as unknown as CastProfile) ?? null;
+}
+
+/** 単一ユーザーのキャストプロフィールをユーザー情報付きで取得する（存在しなければ null）。 */
+export async function getCastWithUser(
+  userId: string,
+): Promise<CastProfileWithUser | null> {
+  const { data, error } = await supabase
+    .from('cast_profiles')
+    .select('*, user:users(*)')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as unknown as CastProfileWithUser) ?? null;
 }

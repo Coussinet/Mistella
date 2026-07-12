@@ -3,10 +3,9 @@
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -22,20 +21,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { useFavorites } from '@/hooks/queries/useFavorites';
 import {
-  sendTonightRequest,
-  sendBroadcastTonightRequest,
-  getFavorites,
-} from '@/services/customerService';
+  useCastShopSearch,
+  useNearbyTonightCasts,
+  usePresetCast,
+  useSendTonight,
+} from '@/hooks/queries/useTonightSend';
 import { useAuthStore } from '@/store/authStore';
 import Avatar from '@/components/common/Avatar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import type {
-  CastProfileWithUser,
-  CustomerStackParamList,
-  Favorite,
-} from '@/types';
+import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
 
 // -----------------------------------------------------------
 // 送信先モード
@@ -59,188 +55,112 @@ export default function TonightSendScreen({ route }: Props) {
     presetCastId ? 'specific' : 'broadcast',
   );
   const [message, setMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
-  // お気に入り
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  // お気に入り（既存クエリフックを再利用）
+  const { data: favoritesData } = useFavorites();
+  const favorites = favoritesData?.favorites ?? [];
   const [selectedFavIds, setSelectedFavIds] = useState<Set<string>>(new Set());
 
   // 特定キャスト
   const [castSearch, setCastSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<CastProfileWithUser[]>([]);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedSpecificCast, setSelectedSpecificCast] =
     useState<CastProfileWithUser | null>(null);
 
-  // 近くのキャスト
-  const [nearbyCasts, setNearbyCasts] = useState<CastProfileWithUser[]>([]);
-  const [isFetchingNearby, setIsFetchingNearby] = useState(false);
+  // 送信 mutation
+  const sendMutation = useSendTonight();
+  const isSending = sendMutation.isPending;
 
   // 完了アニメーション
   const checkScale = useRef(new Animated.Value(0)).current;
 
   // -----------------------------------------------------------
-  // お気に入り取得
+  // プリセットキャストを specific モードで設定（初回のみ反映）
   // -----------------------------------------------------------
+
+  const presetCastQuery = usePresetCast(presetCastId);
+  const presetApplied = useRef(false);
 
   useEffect(() => {
-    if (!profile?.id) return;
-    getFavorites(profile.id).then(setFavorites).catch(() => null);
-  }, [profile]);
-
-  // -----------------------------------------------------------
-  // プリセットキャストを special モードで設定
-  // -----------------------------------------------------------
-
-  useEffect(() => {
-    if (!presetCastId) return;
-    supabase
-      .from('cast_profiles')
-      .select('*, user:users(*)')
-      .eq('user_id', presetCastId)
-      .single()
-      .then(({ data }) => {
-        if (data) setSelectedSpecificCast(data as CastProfileWithUser);
-      });
-  }, [presetCastId]);
-
-  // -----------------------------------------------------------
-  // キャスト検索
-  // -----------------------------------------------------------
-
-  const searchCasts = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setSearchResults([]);
-      return;
+    if (presetCastQuery.data && !presetApplied.current) {
+      presetApplied.current = true;
+      setSelectedSpecificCast(presetCastQuery.data);
     }
-    const { data } = await supabase
-      .from('cast_profiles')
-      .select('*, user:users(*)')
-      .ilike('shop_name', `%${q}%`)
-      .limit(10);
-    setSearchResults((data ?? []) as CastProfileWithUser[]);
-  }, []);
+  }, [presetCastQuery.data]);
+
+  // -----------------------------------------------------------
+  // キャスト検索（300ms デバウンス）
+  // -----------------------------------------------------------
 
   useEffect(() => {
-    const timeout = setTimeout(() => searchCasts(castSearch), 300);
+    const timeout = setTimeout(() => setDebouncedSearch(castSearch), 300);
     return () => clearTimeout(timeout);
-  }, [castSearch, searchCasts]);
+  }, [castSearch]);
+
+  const searchQuery = useCastShopSearch(debouncedSearch);
+  const searchResults = debouncedSearch.trim() ? (searchQuery.data ?? []) : [];
 
   // -----------------------------------------------------------
-  // 近くのキャスト取得
+  // 近くのキャスト取得（モードが nearby の間だけ有効）
   // -----------------------------------------------------------
 
-  const fetchNearbyCasts = useCallback(async () => {
-    setIsFetchingNearby(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('位置情報', '位置情報の許可が必要です。');
-        return;
-      }
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const { latitude: lat, longitude: lng } = loc.coords;
-      const RADIUS = 0.05; // 約 5km
-
-      const { data } = await supabase
-        .from('cast_profiles')
-        .select('*, user:users(*)')
-        .eq('is_working', true)
-        .eq('location_enabled', true)
-        .gte('location_lat', lat - RADIUS)
-        .lte('location_lat', lat + RADIUS)
-        .gte('location_lng', lng - RADIUS)
-        .lte('location_lng', lng + RADIUS);
-
-      setNearbyCasts((data ?? []) as CastProfileWithUser[]);
-    } finally {
-      setIsFetchingNearby(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (mode === 'nearby') {
-      fetchNearbyCasts();
-    }
-  }, [mode, fetchNearbyCasts]);
+  const nearbyQuery = useNearbyTonightCasts(mode === 'nearby');
+  const nearbyCasts = nearbyQuery.data ?? [];
+  const isFetchingNearby = nearbyQuery.isFetching;
 
   // -----------------------------------------------------------
   // 送信
   // -----------------------------------------------------------
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!profile?.id || isSending) return;
 
     let targets: string[] = [];
 
-    if (mode === 'broadcast') {
-      // ブロードキャスト: 特定キャストを選ばず全体に投稿
-      setIsSending(true);
-      try {
-        await sendBroadcastTonightRequest(profile.id, message || undefined);
-        setIsDone(true);
-        Animated.spring(checkScale, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 70,
-          friction: 6,
-        }).start();
-        setTimeout(() => navigation.goBack(), 1600);
-      } catch {
-        Alert.alert('送信に失敗しました', '時間をおいて再度お試しください。');
-      } finally {
-        setIsSending(false);
-      }
-      return;
-    }
-
-    if (mode === 'favorites') {
-      targets = Array.from(selectedFavIds);
-      if (targets.length === 0) {
-        Alert.alert('送信先を選択してください');
-        return;
-      }
-    } else if (mode === 'specific') {
-      if (!selectedSpecificCast) {
-        Alert.alert('キャストを選択してください');
-        return;
-      }
-      targets = [selectedSpecificCast.user_id];
-    } else {
-      targets = nearbyCasts.map((c) => c.user_id);
-      if (targets.length === 0) {
-        Alert.alert('周辺に出勤中のキャストがいません');
-        return;
+    if (mode !== 'broadcast') {
+      if (mode === 'favorites') {
+        targets = Array.from(selectedFavIds);
+        if (targets.length === 0) {
+          Alert.alert('送信先を選択してください');
+          return;
+        }
+      } else if (mode === 'specific') {
+        if (!selectedSpecificCast) {
+          Alert.alert('キャストを選択してください');
+          return;
+        }
+        targets = [selectedSpecificCast.user_id];
+      } else {
+        targets = nearbyCasts.map((c) => c.user_id);
+        if (targets.length === 0) {
+          Alert.alert('周辺に出勤中のキャストがいません');
+          return;
+        }
       }
     }
 
-    setIsSending(true);
-    try {
-      await Promise.all(
-        targets.map((castId) =>
-          sendTonightRequest(profile.id, castId, message || undefined),
-        ),
-      );
+    sendMutation.mutate(
+      mode === 'broadcast'
+        ? { mode: 'broadcast', message: message || undefined }
+        : { mode: 'targets', targetCastIds: targets, message: message || undefined },
+      {
+        onSuccess: () => {
+          // 完了アニメーション
+          setIsDone(true);
+          Animated.spring(checkScale, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 70,
+            friction: 6,
+          }).start();
 
-      // 完了アニメーション
-      setIsDone(true);
-      Animated.spring(checkScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 70,
-        friction: 6,
-      }).start();
-
-      setTimeout(() => {
-        navigation.goBack();
-      }, 1600);
-    } catch {
-      Alert.alert('送信に失敗しました', '時間をおいて再度お試しください。');
-    } finally {
-      setIsSending(false);
-    }
+          setTimeout(() => {
+            navigation.goBack();
+          }, 1600);
+        },
+      },
+    );
   };
 
   // -----------------------------------------------------------
@@ -511,7 +431,7 @@ export default function TonightSendScreen({ route }: Props) {
                       onPress={() => {
                         setSelectedSpecificCast(cast);
                         setCastSearch('');
-                        setSearchResults([]);
+                        setDebouncedSearch('');
                       }}
                     >
                       <Avatar
@@ -547,7 +467,7 @@ export default function TonightSendScreen({ route }: Props) {
                   <Text style={styles.emptyText}>
                     現在地周辺に出勤中のキャストがいません
                   </Text>
-                  <TouchableOpacity onPress={fetchNearbyCasts}>
+                  <TouchableOpacity onPress={() => nearbyQuery.refetch()}>
                     <Text style={styles.retryText}>再検索</Text>
                   </TouchableOpacity>
                 </View>

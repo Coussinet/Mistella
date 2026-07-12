@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import {
   createTimeline,
   deleteTimeline,
+  getMyTimelines,
   getTimelineById,
   getTimelines,
   uploadTimelineMedia,
@@ -34,6 +36,15 @@ export function useTimelines() {
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length === TIMELINE_PAGE_SIZE ? allPages.length : undefined,
+  });
+}
+
+/** 特定ユーザーのタイムライン一覧（プロフィール画面のグリッド表示用） */
+export function useUserTimelines(userId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.timelines.mine(userId ?? ''),
+    enabled: !!userId,
+    queryFn: () => getMyTimelines(userId!),
   });
 }
 
