@@ -23,9 +23,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import WorkStatusToggle from '@/components/cast/WorkStatusToggle';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
+import { useUpdateWorkStatus } from '@/hooks/queries/useCastWork';
 import {
   useCreateTimeline,
   useTimelines,
@@ -260,8 +262,31 @@ function PostModal({ visible, onClose }: PostModalProps) {
 
 type NavProp = NativeStackNavigationProp<CastStackParamList>;
 
+// -----------------------------------------------------------
+// キャスト用: ホーム常設の出勤ステータスヘッダー
+// -----------------------------------------------------------
+
+function CastWorkHeader() {
+  const castProfile = useAuthStore((s) => s.castProfile);
+  const updateMutation = useUpdateWorkStatus();
+
+  if (!castProfile) return null;
+
+  return (
+    <View style={styles.workHeader}>
+      <Text style={styles.workHeaderLabel}>出勤ステータス</Text>
+      <WorkStatusToggle
+        current={castProfile.work_status}
+        onChange={(status) => updateMutation.mutate(status)}
+        disabled={updateMutation.isPending}
+      />
+    </View>
+  );
+}
+
 export default function TimelineScreen() {
   const navigation = useNavigation<NavProp>();
+  const profile = useAuthStore((s) => s.profile);
   const [modalVisible, setModalVisible] = useState(false);
 
   const {
@@ -324,6 +349,7 @@ export default function TimelineScreen() {
         onEndReachedThreshold={0.3}
         onRefresh={refetch}
         refreshing={isRefetching && !isFetchingNextPage}
+        ListHeaderComponent={profile?.role === 'cast' ? <CastWorkHeader /> : null}
         ListEmptyComponent={
           <EmptyState
             icon="dynamic-feed"
@@ -357,6 +383,23 @@ export default function TimelineScreen() {
 // -----------------------------------------------------------
 
 const styles = StyleSheet.create({
+  workHeader: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 14,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    gap: 10,
+  },
+  workHeaderLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    letterSpacing: 0.3,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

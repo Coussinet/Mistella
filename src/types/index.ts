@@ -234,21 +234,21 @@ export type AuthStackParamList = {
   ProfileSetup: { role: UserRole };
 };
 
-/** タブナビゲーター（キャスト用） */
+/** タブナビゲーター（キャスト用）: ホーム / おしごと / 記録 / メッセージ / マイページ */
 export type CastTabParamList = {
-  Timeline: undefined;
-  Search: undefined;
-  Matches: undefined;
+  Home: undefined;
+  Work: undefined;
+  Records: undefined;
   Messages: undefined;
   Profile: undefined;
 };
 
-/** タブナビゲーター（顧客用） */
+/** タブナビゲーター（顧客用）: ホーム / さがす / 記録 / メッセージ / マイページ */
 export type CustomerTabParamList = {
-  Timeline: undefined;
-  CastSearch: undefined;
-  Map: undefined;
-  Matches: undefined;
+  Home: undefined;
+  Discover: undefined;
+  Records: undefined;
+  Messages: undefined;
   Profile: undefined;
 };
 

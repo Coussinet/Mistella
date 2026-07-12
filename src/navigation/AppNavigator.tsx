@@ -8,8 +8,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { COLORS } from '@/constants/colors';
 import { useAuthStore } from '@/store/authStore';
 import AuthNavigator from '@/navigation/AuthNavigator';
-import CastTabNavigator from '@/navigation/CastTabNavigator';
-import CustomerTabNavigator from '@/navigation/CustomerTabNavigator';
+import AppTabNavigator from '@/navigation/AppTabNavigator';
 
 // -----------------------------------------------------------
 // ローディング画面
@@ -46,11 +45,7 @@ export default function AppNavigator() {
     return <LoadingScreen />;
   }
 
-  if (profile.role === 'cast') {
-    return <CastTabNavigator />;
-  }
-
-  return <CustomerTabNavigator />;
+  return <AppTabNavigator role={profile.role} />;
 }
 
 // -----------------------------------------------------------
