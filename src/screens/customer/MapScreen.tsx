@@ -1,24 +1,37 @@
 // ============================================================
 // Mistella - マップ画面（顧客用）
+// 出勤中マーカーのパルス演出 + 下部スナップ式カードカルーセル。
+// カルーセルとマーカーは双方向同期する。
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
 import { DARK_MAP_STYLE } from '@/constants/mapStyle';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import Avatar from '@/components/common/Avatar';
 import StatusBadge from '@/components/common/StatusBadge';
 import { useMapCasts } from '@/hooks/queries/useNearbyCasts';
@@ -41,6 +54,74 @@ function getAreaLabel(lat: number, lng: number): string {
 }
 
 // -----------------------------------------------------------
+// マーカーのパルスリング（出勤中キャスト用）
+// iOS のみアニメーション（tracksViewChanges=true が必要なため）。
+// Android は tracksViewChanges=false のまま静的なゴールドグローリングを出す。
+// -----------------------------------------------------------
+
+/** パルスをアニメーションさせるか（Android は Marker の再描画コストが高いため静的表示） */
+const ANIMATE_PULSE = Platform.OS === 'ios';
+
+function PulseRing() {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1800, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+  }, [progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + progress.value * 0.8 }],
+    opacity: 0.65 * (1 - progress.value),
+  }));
+
+  return <Animated.View pointerEvents="none" style={[styles.pulseRing, animatedStyle]} />;
+}
+
+// -----------------------------------------------------------
+// キャストマーカー
+// -----------------------------------------------------------
+
+interface CastMarkerViewProps {
+  cast: CastProfileWithUser;
+}
+
+function CastMarkerView({ cast }: CastMarkerViewProps) {
+  const isWorking = cast.is_working;
+  return (
+    <View style={styles.markerWrap}>
+      {isWorking && ANIMATE_PULSE ? <PulseRing /> : null}
+      {isWorking && !ANIMATE_PULSE ? (
+        <View pointerEvents="none" style={styles.staticGlowRing} />
+      ) : null}
+      <View style={styles.pin}>
+        {cast.user.avatar_url ? (
+          <Image source={{ uri: cast.user.avatar_url }} style={styles.pinAvatar} />
+        ) : (
+          <View style={[styles.pinAvatar, styles.pinAvatarFallback]}>
+            <Text style={styles.pinInitial}>{cast.user.nickname?.[0] ?? '?'}</Text>
+          </View>
+        )}
+        <View style={styles.pinTail} />
+      </View>
+    </View>
+  );
+}
+
+// -----------------------------------------------------------
+// 下部カルーセルの寸法
+// -----------------------------------------------------------
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = SCREEN_WIDTH - SPACING.xxl * 2;
+const CARD_SPACING = SPACING.sm;
+const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
+const CAROUSEL_SIDE_PADDING = (SCREEN_WIDTH - CARD_WIDTH) / 2;
+
+// -----------------------------------------------------------
 // MapScreen
 // -----------------------------------------------------------
 
@@ -57,8 +138,9 @@ export default function MapScreen() {
   const navigation = useNavigation<NavProp>();
   const { profile } = useAuthStore();
   const mapRef = useRef<MapView>(null);
+  const carouselRef = useRef<FlatList<CastProfileWithUser>>(null);
 
-  const [selectedCast, setSelectedCast] = useState<CastProfileWithUser | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [isLocating, setIsLocating] = useState(false);
   const [workingOnly, setWorkingOnly] = useState(false);
 
@@ -68,7 +150,66 @@ export default function MapScreen() {
   // -----------------------------------------------------------
 
   const { data } = useMapCasts(workingOnly);
-  const casts = data ?? [];
+
+  /** 座標を持つキャストのみ（マーカーとカルーセルでインデックスを揃える） */
+  const mapCasts = useMemo(
+    () =>
+      (data ?? []).filter(
+        (cast) => cast.location_lat != null && cast.location_lng != null,
+      ),
+    [data],
+  );
+
+  // フィルタ切替などで件数が減った場合にインデックスを戻す
+  useEffect(() => {
+    if (mapCasts.length > 0 && activeIndex >= mapCasts.length) {
+      setActiveIndex(0);
+      carouselRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [mapCasts.length, activeIndex]);
+
+  // -----------------------------------------------------------
+  // 地図をキャスト位置へ移動
+  // -----------------------------------------------------------
+
+  const focusCast = useCallback((cast: CastProfileWithUser) => {
+    if (cast.location_lat == null || cast.location_lng == null) return;
+    mapRef.current?.animateToRegion(
+      {
+        latitude: cast.location_lat,
+        longitude: cast.location_lng,
+        latitudeDelta: 0.04,
+        longitudeDelta: 0.04,
+      },
+      450,
+    );
+  }, []);
+
+  /** マーカータップ → 該当カードへスクロール + 地図移動 */
+  const handleMarkerPress = useCallback(
+    (index: number) => {
+      const cast = mapCasts[index];
+      if (!cast) return;
+      setActiveIndex(index);
+      carouselRef.current?.scrollToIndex({ index, animated: true });
+      focusCast(cast);
+    },
+    [mapCasts, focusCast],
+  );
+
+  /** カルーセルのスワイプ確定 → 地図移動 */
+  const handleCarouselMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const rawIndex = Math.round(e.nativeEvent.contentOffset.x / SNAP_INTERVAL);
+      const index = Math.max(0, Math.min(rawIndex, mapCasts.length - 1));
+      if (index !== activeIndex) {
+        setActiveIndex(index);
+        const cast = mapCasts[index];
+        if (cast) focusCast(cast);
+      }
+    },
+    [mapCasts, activeIndex, focusCast],
+  );
 
   // -----------------------------------------------------------
   // 現在地へ移動
@@ -103,13 +244,59 @@ export default function MapScreen() {
   // プロフィール画面へ遷移
   // -----------------------------------------------------------
 
-  const handleViewProfile = (cast: CastProfileWithUser) => {
-    if (profile?.id) {
-      addFootprint(profile.id, cast.user_id).catch(() => null);
-    }
-    setSelectedCast(null);
-    navigation.navigate('UserProfile', { userId: cast.user_id });
-  };
+  const handleViewProfile = useCallback(
+    (cast: CastProfileWithUser) => {
+      if (profile?.id) {
+        addFootprint(profile.id, cast.user_id).catch(() => null);
+      }
+      navigation.navigate('UserProfile', { userId: cast.user_id });
+    },
+    [navigation, profile],
+  );
+
+  // -----------------------------------------------------------
+  // カルーセルカード
+  // -----------------------------------------------------------
+
+  const renderCastCard = useCallback(
+    ({ item, index }: { item: CastProfileWithUser; index: number }) => {
+      const isActive = index === activeIndex;
+      return (
+        <View style={[styles.card, isActive && styles.cardActive]}>
+          <View style={styles.cardContent}>
+            <Avatar
+              uri={item.user.avatar_url}
+              size={52}
+              nickname={item.user.nickname}
+              isWorking={item.is_working}
+            />
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardNickname} numberOfLines={1}>
+                {item.user.nickname}
+              </Text>
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {item.shop_name ??
+                  (item.location_lat != null && item.location_lng != null
+                    ? getAreaLabel(item.location_lat, item.location_lng)
+                    : '')}
+              </Text>
+            </View>
+            <StatusBadge status={item.work_status} size="small" />
+          </View>
+
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => handleViewProfile(item)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.profileButtonText}>プロフィールを見る</Text>
+            <MaterialIcons name="arrow-forward" size={16} color={COLORS.background} />
+          </TouchableOpacity>
+        </View>
+      );
+    },
+    [activeIndex, handleViewProfile],
+  );
 
   return (
     <View style={styles.container}>
@@ -120,37 +307,23 @@ export default function MapScreen() {
         customMapStyle={DARK_MAP_STYLE}
         showsUserLocation
         showsMyLocationButton={false}
-        onPress={() => setSelectedCast(null)}
       >
-        {casts.map((cast) =>
-          cast.location_lat != null && cast.location_lng != null ? (
-            <Marker
-              key={cast.user_id}
-              coordinate={{
-                latitude: cast.location_lat,
-                longitude: cast.location_lng,
-              }}
-              tracksViewChanges={false}
-              onPress={() => setSelectedCast(cast)}
-            >
-              <View style={styles.pin}>
-                {cast.user.avatar_url ? (
-                  <Image
-                    source={{ uri: cast.user.avatar_url }}
-                    style={styles.pinAvatar}
-                  />
-                ) : (
-                  <View style={[styles.pinAvatar, styles.pinAvatarFallback]}>
-                    <Text style={styles.pinInitial}>
-                      {cast.user.nickname?.[0] ?? '?'}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.pinTail} />
-              </View>
-            </Marker>
-          ) : null,
-        )}
+        {mapCasts.map((cast, index) => (
+          <Marker
+            key={cast.user_id}
+            coordinate={{
+              latitude: cast.location_lat!,
+              longitude: cast.location_lng!,
+            }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            // Android はビュー追跡による性能劣化が大きいので無効化（静的グローで代替）。
+            // iOS は出勤中のみパルスを描画するために追跡を有効化する。
+            tracksViewChanges={ANIMATE_PULSE && cast.is_working}
+            onPress={() => handleMarkerPress(index)}
+          >
+            <CastMarkerView cast={cast} />
+          </Marker>
+        ))}
       </MapView>
 
       {/* 現在地ボタン */}
@@ -178,57 +351,27 @@ export default function MapScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* キャストプレビューカード */}
-      {selectedCast ? (
-        <SafeAreaView style={styles.previewSafe} edges={['bottom']}>
-          <View style={styles.previewCard}>
-            {/* 閉じるボタン */}
-            <TouchableOpacity
-              style={styles.previewClose}
-              onPress={() => setSelectedCast(null)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialIcons name="close" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-
-            <View style={styles.previewContent}>
-              <Avatar
-                uri={selectedCast.user.avatar_url}
-                size={56}
-                nickname={selectedCast.user.nickname}
-                isWorking={selectedCast.is_working}
-              />
-              <View style={styles.previewInfo}>
-                <Text style={styles.previewNickname}>
-                  {selectedCast.user.nickname}
-                </Text>
-                {selectedCast.location_lat != null &&
-                selectedCast.location_lng != null ? (
-                  <Text style={styles.previewArea}>
-                    {getAreaLabel(
-                      selectedCast.location_lat,
-                      selectedCast.location_lng,
-                    )}
-                  </Text>
-                ) : null}
-                <StatusBadge status={selectedCast.work_status} size="small" />
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={() => handleViewProfile(selectedCast)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.profileButtonText}>プロフィールを見る</Text>
-              <MaterialIcons
-                name="arrow-forward"
-                size={16}
-                color={COLORS.background}
-              />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
+      {/* キャストカードカルーセル（マーカーと双方向同期） */}
+      {mapCasts.length > 0 ? (
+        <FlatList
+          ref={carouselRef}
+          data={mapCasts}
+          keyExtractor={(item) => item.user_id}
+          renderItem={renderCastCard}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={SNAP_INTERVAL}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          onMomentumScrollEnd={handleCarouselMomentumEnd}
+          getItemLayout={(_, index) => ({
+            length: SNAP_INTERVAL,
+            offset: SNAP_INTERVAL * index,
+            index,
+          })}
+          style={styles.carousel}
+          contentContainerStyle={styles.carouselContent}
+        />
       ) : null}
     </View>
   );
@@ -309,6 +452,32 @@ const styles = StyleSheet.create({
     color: COLORS.background,
   },
 
+  // マーカー（パルスの拡大分を収める余白付きコンテナ）
+  markerWrap: {
+    width: 100,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: COLORS.gold,
+    backgroundColor: withAlpha(COLORS.gold, 0.18),
+  },
+  staticGlowRing: {
+    position: 'absolute',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    borderWidth: 2,
+    borderColor: withAlpha(COLORS.gold, 0.55),
+    backgroundColor: withAlpha(COLORS.gold, 0.12),
+  },
+
   // ピン
   pin: {
     alignItems: 'center',
@@ -347,64 +516,58 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
 
-  // プレビューカード
-  previewSafe: {
+  // カルーセル
+  carousel: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
+    bottom: SPACING.sm,
+    flexGrow: 0,
   },
-  previewCard: {
+  carouselContent: {
+    paddingHorizontal: CAROUSEL_SIDE_PADDING,
+    gap: CARD_SPACING,
+  },
+  card: {
+    width: CARD_WIDTH,
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    gap: 16,
+    padding: SPACING.md,
+    gap: SPACING.sm,
+    ...SHADOWS.card,
   },
-  previewClose: {
-    position: 'absolute',
-    top: 14,
-    right: 16,
-    padding: 4,
+  cardActive: {
+    borderColor: withAlpha(COLORS.gold, 0.6),
   },
-  previewContent: {
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingRight: 28,
+    gap: SPACING.sm,
   },
-  previewInfo: {
+  cardInfo: {
     flex: 1,
-    gap: 5,
+    gap: 3,
   },
-  previewNickname: {
+  cardNickname: {
+    ...TYPOGRAPHY.h3,
     color: COLORS.text,
-    fontSize: 16,
-    fontWeight: '700',
   },
-  previewArea: {
+  cardSubtitle: {
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    fontSize: 12,
   },
   profileButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.gold,
-    borderRadius: 14,
-    paddingVertical: 13,
+    borderRadius: RADIUS.md + 2,
+    paddingVertical: SPACING.sm,
     gap: 6,
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 3 },
+    ...SHADOWS.glow,
     shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
   },
   profileButtonText: {
     color: COLORS.background,

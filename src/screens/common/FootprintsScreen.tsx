@@ -8,7 +8,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
+import { listItemEntering } from '@/utils/animations';
 import { SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
@@ -33,19 +35,21 @@ export default function FootprintsScreen() {
       <FlatList
         data={footprints}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) =>
+        renderItem={({ item, index }) =>
           item.visitor ? (
-            <UserListItem
-              avatarUrl={item.visitor.avatar_url}
-              nickname={item.visitor.nickname}
-              meta={formatRelativeTime(item.created_at)}
-              onPress={() =>
-                navigation.navigate('UserProfile', { userId: item.visitor!.id })
-              }
-              right={
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
-              }
-            />
+            <Animated.View entering={listItemEntering(index)}>
+              <UserListItem
+                avatarUrl={item.visitor.avatar_url}
+                nickname={item.visitor.nickname}
+                meta={formatRelativeTime(item.created_at)}
+                onPress={() =>
+                  navigation.navigate('UserProfile', { userId: item.visitor!.id })
+                }
+                right={
+                  <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
+                }
+              />
+            </Animated.View>
           ) : null
         }
         onRefresh={refetch}

@@ -17,7 +17,9 @@ import {
   View,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import Reanimated from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
+import { listItemEntering } from '@/utils/animations';
 import { SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
@@ -138,15 +140,17 @@ export default function FavoritesScreen() {
       <FlatList
         data={favorites}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FavoriteItem
-            item={item}
-            castProfile={
-              item.target_user ? castProfileMap[item.target_user.id] : undefined
-            }
-            onDelete={handleDelete}
-            onPress={(userId) => navigation.navigate('UserProfile', { userId })}
-          />
+        renderItem={({ item, index }) => (
+          <Reanimated.View entering={listItemEntering(index)}>
+            <FavoriteItem
+              item={item}
+              castProfile={
+                item.target_user ? castProfileMap[item.target_user.id] : undefined
+              }
+              onDelete={handleDelete}
+              onPress={(userId) => navigation.navigate('UserProfile', { userId })}
+            />
+          </Reanimated.View>
         )}
         onRefresh={refetch}
         refreshing={isRefetching}
