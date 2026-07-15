@@ -128,9 +128,12 @@ export type Database = {
           activities: string | null
           age: number | null
           blood_type: string | null
+          body_style: string | null
           charm_point: string | null
           customer_message: string | null
+          drink_strength: string | null
           favorite_drink: string | null
+          favorite_song: string | null
           favorite_topics: string | null
           height: number | null
           hobbies: string | null
@@ -154,9 +157,12 @@ export type Database = {
           activities?: string | null
           age?: number | null
           blood_type?: string | null
+          body_style?: string | null
           charm_point?: string | null
           customer_message?: string | null
+          drink_strength?: string | null
           favorite_drink?: string | null
+          favorite_song?: string | null
           favorite_topics?: string | null
           height?: number | null
           hobbies?: string | null
@@ -180,9 +186,12 @@ export type Database = {
           activities?: string | null
           age?: number | null
           blood_type?: string | null
+          body_style?: string | null
           charm_point?: string | null
           customer_message?: string | null
+          drink_strength?: string | null
           favorite_drink?: string | null
+          favorite_song?: string | null
           favorite_topics?: string | null
           height?: number | null
           hobbies?: string | null
@@ -559,6 +568,38 @@ export type Database = {
           {
             foreignKeyName: "partner_notes_partner_id_fkey"
             columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_photos: {
+        Row: {
+          created_at: string | null
+          id: string
+          photo_url: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          photo_url: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          photo_url?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_photos_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

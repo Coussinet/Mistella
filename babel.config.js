@@ -11,8 +11,8 @@ module.exports = function (api) {
           extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
         },
       ],
-      // reanimated plugin は必ず最後に置く
-      'react-native-reanimated/plugin',
+      // worklets プラグイン（reanimated 4 系）は必ず最後に置く
+      'react-native-worklets/plugin',
     ],
   };
 };

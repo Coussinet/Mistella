@@ -339,9 +339,19 @@ export default function RegisterScreen({ navigation }: Props) {
                 )}
               </View>
               <Text style={styles.termsText}>
-                <Text style={styles.termsLink}>利用規約</Text>
+                <Text
+                  style={styles.termsLink}
+                  onPress={() => navigation.navigate('Legal', { kind: 'terms' })}
+                >
+                  利用規約
+                </Text>
                 {'・'}
-                <Text style={styles.termsLink}>プライバシーポリシー</Text>
+                <Text
+                  style={styles.termsLink}
+                  onPress={() => navigation.navigate('Legal', { kind: 'privacy' })}
+                >
+                  プライバシーポリシー
+                </Text>
                 {'に同意します'}
               </Text>
             </TouchableOpacity>

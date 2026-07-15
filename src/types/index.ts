@@ -54,6 +54,21 @@ export interface CastProfile {
   customer_message: string | null;
   hometown: string | null;
   motto: string | null;
+  /** 飲みべ（酒豪/高め/普通/弱い/飲めない） */
+  drink_strength: string | null;
+  /** 好きな歌 */
+  favorite_song: string | null;
+  /** スタイル（スリム/やや細身/普通/グラマー/ぽっちゃり） */
+  body_style: string | null;
+}
+
+/** プロフィール写真（1ユーザー複数枚・全員閲覧可） */
+export interface ProfilePhoto {
+  id: string;
+  user_id: string;
+  photo_url: string;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface CustomerProfile {
@@ -232,6 +247,8 @@ export type AuthStackParamList = {
   ForgotPassword: undefined;
   RoleSelect: undefined;
   ProfileSetup: { role: UserRole };
+  /** 法的文書（利用規約 / プライバシーポリシー） */
+  Legal: { kind: 'terms' | 'privacy' };
 };
 
 /** タブナビゲーター（キャスト用）: ホーム / おしごと / 記録 / メッセージ / マイページ */
