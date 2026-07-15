@@ -17,9 +17,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
+import { listItemEntering } from '@/utils/animations';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
 import Avatar from '@/components/common/Avatar';
@@ -162,8 +164,10 @@ export default function CastSearchScreen() {
   // -----------------------------------------------------------
 
   const renderItem = useCallback(
-    ({ item }: { item: CastProfileWithUser }) => (
-      <CastCard cast={item} onPress={() => handleCastPress(item)} />
+    ({ item, index }: { item: CastProfileWithUser; index: number }) => (
+      <Animated.View style={styles.cardCell} entering={listItemEntering(index)}>
+        <CastCard cast={item} onPress={() => handleCastPress(item)} />
+      </Animated.View>
     ),
     [handleCastPress],
   );
@@ -457,6 +461,9 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 12,
     paddingBottom: 24,
+  },
+  cardCell: {
+    flex: 1,
   },
   row: {
     gap: 12,

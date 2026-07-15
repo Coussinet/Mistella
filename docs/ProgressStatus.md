@@ -1,8 +1,17 @@
 # 開発進捗ドキュメント：Mistella
 
-> **最終更新日**: 2026-05-11  
+> **最終更新日**: 2026-07-15  
 > **担当**: y.araya@crea-lp.com  
-> **ステータス**: フロントエンド全機能実装完了・管理Webアプリ実装完了 / **Supabaseセットアップ・Edge Functionデプロイ待ち**
+> **ステータス**: 全面リファクタリング完了(M0〜M6)・会った記録機能実装済み・新IA適用済み / **Edge Functionデプロイ・実機検証待ち**
+
+> **2026-07-15 大型アップデート(M0〜M6)**
+> - **M0 ツーリング**: ESLint(flat config)/typecheck/Supabase型生成(src/types/database.ts)/`@/`パスエイリアス導入。既存型エラー全解消
+> - **M1 デザイントークン**: src/constants/theme.ts(SPACING/RADIUS/TYPOGRAPHY/SHADOWS/withAlpha)、colors拡張、mapStyle分離
+> - **M2 データ層統一**: 全画面を React Query 化(hooks/queries/*)。画面からの supabase 直 import を全廃。realtime は useRealtimeInvalidation / setQueryData 直反映に統一。チャットは optimistic 送信
+> - **M3 共通コンポーネント**: EmptyState/ErrorView/Skeleton/UserListItem/FormField/Card/IconButton/AnimatedPressable/ChipSelector。エラー表示は utils/showError に一元化
+> - **M4 会った記録(両ロール)**: partner_notes + meeting_records テーブル新設(migration 008 適用済み・RLS実証済み)。customer_notes は移行のうえ廃止。ContactsScreen/PartnerNoteScreen/MeetingRecordEditScreen(共通)。約束の前日/当日ローカル通知。チャット・プロフィールヘッダー・マイページから導線
+> - **M5 ナビ再編**: AppTabNavigator に統合(旧2ナビ削除)。キャスト: ホーム(出勤トグル常設)/おしごと/記録/メッセージ/マイページ。客: ホーム(出勤中カルーセル)/さがす(検索⇄マップ統合 DiscoverScreen)/記録/メッセージ/マイページ
+> - **M6 デザイン刷新**: TonightSend(926→234行)/UserProfile(857→263行・ヒーロー+パララックス+ガラスアクションバー)/EditProfile(528→127行・useReducer)分割。チャットのグルーピング/日付セパレータ/blur入力バー。マップのパルスマーカー+スナップカルーセル。expo-haptics・リスト出現アニメ・スケルトンローディング全面適用
 
 ---
 

@@ -345,7 +345,7 @@ export default function ContactsScreen() {
                   <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
                 }
               />
-            </View>
+            </Animated.View>
           );
         }}
         contentContainerStyle={styles.listContent}

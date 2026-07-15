@@ -23,6 +23,7 @@ import { SkeletonList } from '@/components/common/Skeleton';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import TimelineItem from '@/components/timeline/TimelineItem';
 import TimelinePostForm from '@/components/timeline/TimelinePostForm';
+import WorkingCastsCarousel from '@/components/cast/WorkingCastsCarousel';
 import {
   useCreateTimeline,
   useDeleteTimeline,
@@ -178,6 +179,11 @@ export default function CustomerHomeScreen() {
         data={timelines}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListHeaderComponent={
+          <WorkingCastsCarousel
+            onPressCast={(userId) => navigation.navigate('UserProfile', { userId })}
+          />
+        }
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         contentContainerStyle={

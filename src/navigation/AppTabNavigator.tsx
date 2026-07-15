@@ -13,6 +13,7 @@ import React from 'react';
 import { stackScreenOptions, tabBarStyles } from '@/navigation/navigationTheme';
 import { COLORS } from '@/constants/colors';
 import { useAppStore } from '@/store/appStore';
+import { tapLight } from '@/utils/haptics';
 import type {
   CastStackParamList,
   CastTabParamList,
@@ -225,6 +226,7 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
             key={tab.name}
             name={tab.name as keyof (CastTabParamList & CustomerTabParamList)}
             component={tab.component}
+            listeners={{ tabPress: () => tapLight() }}
             options={{
               tabBarLabel: tab.label,
               tabBarIcon: ({ color, size }) => (
