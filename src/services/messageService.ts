@@ -100,10 +100,11 @@ export async function sendImageMessage(
   senderId: string,
   localUri: string,
 ): Promise<Message> {
+  // 先頭フォルダを送信者IDにして Storage の「自分フォルダのみ書込可」RLS と整合させる
   const imageUrl = await uploadImage(
     localUri,
     'chat-images',
-    `${matchId}/${senderId}/${Date.now()}.jpg`,
+    `${senderId}/${matchId}/${Date.now()}.jpg`,
   );
   return sendMessage(matchId, senderId, null, imageUrl);
 }
