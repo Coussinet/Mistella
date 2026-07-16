@@ -41,12 +41,12 @@ export default function LoginScreen({ navigation }: Props) {
 
   const { setSession, setUser, setProfile } = useAuthStore();
 
-  const handleLineLogin = async () => {
+  const runLineLogin = async (role: 'cast' | 'customer') => {
     setError(null);
     setIsLoading(true);
     try {
-      // 新規ユーザーはデフォルトで顧客ロール（ロールは後から変更可能）
-      await signInWithLine('customer');
+      // role は新規登録時のみ使用（既存ユーザーは登録済みのroleでログイン）
+      await signInWithLine(role);
       // セッション確立後は App.tsx の onAuthStateChange が自動でログイン処理する
     } catch (e) {
       if (e instanceof Error && e.message === 'cancelled') {
@@ -57,6 +57,20 @@ export default function LoginScreen({ navigation }: Props) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLineLogin = () => {
+    // 初めてのLINEログインでは登録種別（男性/女性）を選ぶ。
+    // 既にアカウントがある場合はこの選択は無視され、登録済みの種別でログインされる。
+    Alert.alert(
+      'LINEでログイン / 新規登録',
+      '初めてご利用の場合は、ご登録の種別を選択してください。\n（既にアカウントがある方はどちらを選んでもログインできます）',
+      [
+        { text: '男性として利用', onPress: () => runLineLogin('customer') },
+        { text: '女性（キャスト）として利用', onPress: () => runLineLogin('cast') },
+        { text: 'キャンセル', style: 'cancel' },
+      ],
+    );
   };
 
   const handleLogin = async () => {
