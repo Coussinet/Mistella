@@ -14,9 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
-import { listItemEntering } from '@/utils/animations';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
@@ -97,14 +95,12 @@ export default function MatchesScreen() {
       <FlatList
         data={matches}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={listItemEntering(index)}>
-            <MatchItem
-              match={item}
-              myUserId={user?.id ?? ''}
-              onPress={handlePress}
-            />
-          </Animated.View>
+        renderItem={({ item }) => (
+          <MatchItem
+            match={item}
+            myUserId={user?.id ?? ''}
+            onPress={handlePress}
+          />
         )}
         onRefresh={refetch}
         refreshing={isRefetching}

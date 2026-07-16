@@ -19,11 +19,9 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, GRADIENTS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
-import { listItemEntering } from '@/utils/animations';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
 import EmptyState from '@/components/common/EmptyState';
@@ -162,10 +160,10 @@ export default function CastSearchScreen() {
   // -----------------------------------------------------------
 
   const renderItem = useCallback(
-    ({ item, index }: { item: CastProfileWithUser; index: number }) => (
-      <Animated.View style={styles.cardCell} entering={listItemEntering(index)}>
+    ({ item }: { item: CastProfileWithUser }) => (
+      <View style={styles.cardCell}>
         <CastCard cast={item} onPress={() => handleCastPress(item)} />
-      </Animated.View>
+      </View>
     ),
     [handleCastPress],
   );

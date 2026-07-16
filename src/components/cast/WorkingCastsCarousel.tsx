@@ -5,13 +5,11 @@
 
 import React from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 import Avatar from '@/components/common/Avatar';
 import { COLORS } from '@/constants/colors';
 import { RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import { useMapCasts } from '@/hooks/queries/useNearbyCasts';
 import type { CastProfileWithUser } from '@/types';
-import { listItemEntering } from '@/utils/animations';
 
 interface WorkingCastsCarouselProps {
   onPressCast: (userId: string) => void;
@@ -36,30 +34,28 @@ export default function WorkingCastsCarousel({ onPressCast }: WorkingCastsCarous
         keyExtractor={(item: CastProfileWithUser) => item.user_id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={listItemEntering(index)}>
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => onPressCast(item.user_id)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.avatarRing}>
-                <Avatar
-                  uri={item.user?.avatar_url ?? null}
-                  size={60}
-                  nickname={item.user?.nickname}
-                />
-              </View>
-              <Text style={styles.name} numberOfLines={1}>
-                {item.user?.nickname ?? ''}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => onPressCast(item.user_id)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.avatarRing}>
+              <Avatar
+                uri={item.user?.avatar_url ?? null}
+                size={60}
+                nickname={item.user?.nickname}
+              />
+            </View>
+            <Text style={styles.name} numberOfLines={1}>
+              {item.user?.nickname ?? ''}
+            </Text>
+            {item.shop_name ? (
+              <Text style={styles.shop} numberOfLines={1}>
+                {item.shop_name}
               </Text>
-              {item.shop_name ? (
-                <Text style={styles.shop} numberOfLines={1}>
-                  {item.shop_name}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-          </Animated.View>
+            ) : null}
+          </TouchableOpacity>
         )}
       />
     </View>

@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '@/components/common/Avatar';
 import EmptyState from '@/components/common/EmptyState';
@@ -35,7 +34,6 @@ import {
 import { summarizeByPartner } from '@/services/meetingService';
 import { useAuthStore } from '@/store/authStore';
 import type { CastStackParamList, MeetingRecord, PartnerNote, User } from '@/types';
-import { listItemEntering } from '@/utils/animations';
 import {
   formatDate,
   getDaysUntil,
@@ -330,7 +328,7 @@ export default function ContactsScreen() {
             metaParts.push(`記録${summary.recordCount}件`);
           }
           return (
-            <Animated.View entering={listItemEntering(index)} style={styles.entryCard}>
+            <View style={styles.entryCard}>
               <UserListItem
                 avatarUrl={item.partner?.avatar_url ?? null}
                 nickname={
@@ -345,7 +343,7 @@ export default function ContactsScreen() {
                   <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
                 }
               />
-            </Animated.View>
+            </View>
           );
         }}
         contentContainerStyle={styles.listContent}
