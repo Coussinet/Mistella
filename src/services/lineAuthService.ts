@@ -66,14 +66,22 @@ export async function signInWithLine(role: 'cast' | 'customer'): Promise<void> {
   if (params.state !== state) {
     throw new Error('認証状態が一致しませんでした。もう一度お試しください。');
   }
-  if (!params.token_hash) {
+  if (!params.code) {
     throw new Error('LINEログインの認証に失敗しました。');
+  }
+
+  // 認可コードを1回だけ交換して token_hash を取得（単回使用制約を守る）
+  const { data, error: fnError } = await supabase.functions.invoke('line-exchange', {
+    body: { code: params.code, role },
+  });
+  if (fnError || !data?.token_hash) {
+    throw new Error('LINEログインの検証に失敗しました。');
   }
 
   // token_hash で Supabase セッションを確立
   const { error } = await supabase.auth.verifyOtp({
     type: 'magiclink',
-    token_hash: params.token_hash,
+    token_hash: data.token_hash as string,
   });
   if (error) throw error;
 }
