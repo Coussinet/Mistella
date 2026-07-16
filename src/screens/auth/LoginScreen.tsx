@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
 import { signIn } from '@/services/authService';
+import { signInWithLine } from '@/services/lineAuthService';
 import { useAuthStore } from '@/store/authStore';
 import { toErrorMessage } from '@/utils/showError';
 import type { AuthStackParamList } from '@/types';
@@ -40,13 +41,22 @@ export default function LoginScreen({ navigation }: Props) {
 
   const { setSession, setUser, setProfile } = useAuthStore();
 
-  const handleLineLogin = () => {
-    // LINE ログインは LINE Developers のチャネル認証情報と
-    // トークン交換用 Edge Function の設定が必要（別途構成）。
-    Alert.alert(
-      'LINEログイン',
-      'LINEログインは現在準備中です。設定完了までメールアドレスでのログインをご利用ください。',
-    );
+  const handleLineLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      // 新規ユーザーはデフォルトで顧客ロール（ロールは後から変更可能）
+      await signInWithLine('customer');
+      // セッション確立後は App.tsx の onAuthStateChange が自動でログイン処理する
+    } catch (e) {
+      if (e instanceof Error && e.message === 'cancelled') {
+        // ユーザーがキャンセルした場合は何もしない
+      } else {
+        setError(toErrorMessage(e, 'LINEログインに失敗しました。'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = async () => {

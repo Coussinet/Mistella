@@ -62,7 +62,8 @@
           "locationAlwaysAndWhenInUsePermission": "出勤中の位置情報共有に使用します"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
