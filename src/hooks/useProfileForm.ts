@@ -39,6 +39,9 @@ export interface ProfileFormState {
   customerMessage: string;
   hometown: string;
   motto: string;
+  drinkStrength: string;
+  favoriteSong: string;
+  bodyStyle: string;
   // 顧客専用
   customerAge: string;
   occupation: string;
@@ -93,6 +96,9 @@ function createInitialState(profile: User | null): ProfileFormState {
     customerMessage: '',
     hometown: '',
     motto: '',
+    drinkStrength: '',
+    favoriteSong: '',
+    bodyStyle: '',
     customerAge: '',
     occupation: '',
     annualIncome: '',
@@ -148,6 +154,9 @@ export function useProfileForm() {
         customerMessage: data.customer_message ?? '',
         hometown: data.hometown ?? '',
         motto: data.motto ?? '',
+        drinkStrength: data.drink_strength ?? '',
+        favoriteSong: data.favorite_song ?? '',
+        bodyStyle: data.body_style ?? '',
       },
     });
   }, [isCast, castProfileQuery.data]);
@@ -193,6 +202,9 @@ export function useProfileForm() {
             customer_message: state.customerMessage.trim() || null,
             hometown: state.hometown.trim() || null,
             motto: state.motto.trim() || null,
+            drink_strength: state.drinkStrength || null,
+            favorite_song: state.favoriteSong.trim() || null,
+            body_style: state.bodyStyle || null,
           }
         : undefined,
       customerFields: !isCast

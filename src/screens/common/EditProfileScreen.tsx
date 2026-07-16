@@ -19,6 +19,7 @@ import {
 import CastDetailSection from '@/components/profile/CastDetailSection';
 import CustomerDetailSection from '@/components/profile/CustomerDetailSection';
 import PhotoEditor from '@/components/profile/PhotoEditor';
+import PhotoGalleryEditor from '@/components/profile/PhotoGalleryEditor';
 import ProfileBasicSection from '@/components/profile/ProfileBasicSection';
 import { COLORS } from '@/constants/colors';
 import { useSaveMyProfile } from '@/hooks/queries/useProfile';
@@ -64,8 +65,11 @@ export default function EditProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* アバター */}
+        {/* アバター（メイン写真） */}
         <PhotoEditor avatarUri={state.avatarUri} onChange={setAvatar} />
+
+        {/* 複数写真ギャラリー（男女共通） */}
+        <PhotoGalleryEditor />
 
         {/* 基本情報 */}
         <ProfileBasicSection state={state} setField={setField} />

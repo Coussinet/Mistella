@@ -8,8 +8,17 @@
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Dimensions,
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -21,6 +30,8 @@ import type { CastProfile, User, WorkStatus } from '@/types';
 
 /** ヒーロー写真の高さ */
 export const HERO_HEIGHT = 420;
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // -----------------------------------------------------------
 // 出勤ステータスバッジ
@@ -51,9 +62,29 @@ interface ProfileHeroProps {
   castProfile: CastProfile | null;
   /** 親の Animated.FlatList のスクロールオフセット */
   scrollY: SharedValue<number>;
+  /** 追加のプロフィール写真 URL（メインの後ろに横スワイプで表示） */
+  photoUrls?: string[];
 }
 
-export default function ProfileHero({ user, castProfile, scrollY }: ProfileHeroProps) {
+export default function ProfileHero({
+  user,
+  castProfile,
+  scrollY,
+  photoUrls = [],
+}: ProfileHeroProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // メイン(avatar)＋追加写真を重複なくまとめる
+  const gallery: string[] = [];
+  if (user.avatar_url) gallery.push(user.avatar_url);
+  for (const url of photoUrls) {
+    if (url && !gallery.includes(url)) gallery.push(url);
+  }
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    if (idx !== activeIndex) setActiveIndex(idx);
+  };
   // パララックス: 上スクロール時は 0.5 倍速で追従、
   // 引っ張り下げ時はギャップを埋めるように拡大する。
   const parallaxStyle = useAnimatedStyle(() => ({
@@ -76,8 +107,30 @@ export default function ProfileHero({ user, castProfile, scrollY }: ProfileHeroP
 
   return (
     <Animated.View style={[styles.hero, parallaxStyle]}>
-      {user.avatar_url ? (
-        <Image source={{ uri: user.avatar_url }} style={styles.photo} resizeMode="cover" />
+      {gallery.length > 0 ? (
+        <>
+          {gallery.length === 1 ? (
+            <Image source={{ uri: gallery[0] }} style={styles.photo} resizeMode="cover" />
+          ) : (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={styles.photo}
+            >
+              {gallery.map((url, i) => (
+                <Image
+                  key={`${url}-${i}`}
+                  source={{ uri: url }}
+                  style={styles.galleryImage}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+          )}
+        </>
       ) : (
         <LinearGradient
           colors={[withAlpha(COLORS.gold, 0.45), COLORS.surfaceLight, COLORS.background]}
@@ -87,8 +140,20 @@ export default function ProfileHero({ user, castProfile, scrollY }: ProfileHeroP
         </LinearGradient>
       )}
 
+      {/* ページインジケータ（複数写真時） */}
+      {gallery.length > 1 ? (
+        <View style={styles.pager} pointerEvents="none">
+          {gallery.map((_, i) => (
+            <View
+              key={i}
+              style={[styles.dot, i === activeIndex ? styles.dotActive : styles.dotInactive]}
+            />
+          ))}
+        </View>
+      ) : null}
+
       {/* 写真下部の読みやすさ確保用オーバーレイ */}
-      <LinearGradient colors={GRADIENTS.photoOverlay} style={styles.overlay} />
+      <LinearGradient colors={GRADIENTS.photoOverlay} style={styles.overlay} pointerEvents="none" />
 
       {/* 名前・出勤バッジ・店舗情報 */}
       <View style={styles.meta}>
@@ -131,6 +196,29 @@ const styles = StyleSheet.create({
   },
   photo: {
     ...StyleSheet.absoluteFillObject,
+  },
+  galleryImage: {
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
+  },
+  pager: {
+    position: 'absolute',
+    top: SPACING.md + 44,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotActive: {
+    backgroundColor: COLORS.gold,
+    width: 18,
+  },
+  dotInactive: {
+    backgroundColor: withAlpha(COLORS.text, 0.4),
   },
   placeholder: {
     alignItems: 'center',

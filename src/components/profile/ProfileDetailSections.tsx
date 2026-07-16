@@ -105,6 +105,7 @@ export default function ProfileDetailSections({
             items={[
               { label: '年齢', value: castProfile.age != null ? `${castProfile.age}歳` : null },
               { label: '身長', value: castProfile.height != null ? `${castProfile.height}cm` : null },
+              { label: 'スタイル', value: castProfile.body_style },
               { label: '血液型', value: castProfile.blood_type },
               { label: '出身地', value: castProfile.hometown },
               { label: '趣味・特技', value: castProfile.hobbies },
@@ -114,9 +115,11 @@ export default function ProfileDetailSections({
           />
           <DetailCard
             icon="local-bar"
-            title="お客様へのアピール"
+            title="アピールポイント"
             items={[
-              { label: '得意なお酒・飲み方', value: castProfile.favorite_drink },
+              { label: '好きなお酒', value: castProfile.favorite_drink },
+              { label: '飲みべ', value: castProfile.drink_strength },
+              { label: '好きな歌', value: castProfile.favorite_song },
               { label: '接客スタイル', value: castProfile.service_style },
               { label: '得意な話題', value: castProfile.favorite_topics },
               { label: '一緒にやりたいこと', value: castProfile.activities },

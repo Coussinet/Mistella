@@ -36,6 +36,7 @@ import {
   useToggleFavorite,
   useUserProfile,
 } from '@/hooks/queries/useUserProfile';
+import { useProfilePhotos } from '@/hooks/queries/useProfilePhotos';
 import { useAuthStore } from '@/store/authStore';
 import type { CastStackParamList } from '@/types';
 import { success } from '@/utils/haptics';
@@ -53,6 +54,10 @@ export default function UserProfileScreen() {
 
   const { targetUser, castProfile, timelines, liked, favorited, isPending, isError, error, refetch } =
     useUserProfile(userId);
+
+  // 追加のプロフィール写真（ヒーローの横スワイプギャラリー用）
+  const { data: profilePhotos } = useProfilePhotos(userId);
+  const photoUrls = (profilePhotos ?? []).map((p) => p.photo_url);
 
   // 足跡を残す（自分自身は除く）
   useRecordFootprint(userId);
@@ -192,7 +197,12 @@ export default function UserProfileScreen() {
         scrollEventThrottle={16}
         ListHeaderComponent={
           <View>
-            <ProfileHero user={targetUser} castProfile={castProfile} scrollY={scrollY} />
+            <ProfileHero
+              user={targetUser}
+              castProfile={castProfile}
+              scrollY={scrollY}
+              photoUrls={photoUrls}
+            />
             <View style={styles.body}>
               <ProfileDetailSections user={targetUser} castProfile={castProfile} />
               <TimelineSectionHeader count={timelines.length} />
