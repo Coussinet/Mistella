@@ -15,13 +15,11 @@ const APP_RETURN = 'mistella://auth/line';
 function redirectToApp(params: Record<string, string>): Response {
   const qs = new URLSearchParams(params).toString();
   const target = `${APP_RETURN}?${qs}`;
-  const html = `<!doctype html><html><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0;url=${target}">
-<script>location.replace(${JSON.stringify(target)});</script>
-</head><body>Mistella に戻っています…</body></html>`;
-  return new Response(html, {
-    status: 200,
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  // ASWebAuthenticationSession はアプリスキームへの HTTP 302 リダイレクトで
+  // コールバックを捕捉する。JS/meta リダイレクトでは復帰しないため 302 を使う。
+  return new Response(null, {
+    status: 302,
+    headers: { Location: target },
   });
 }
 
