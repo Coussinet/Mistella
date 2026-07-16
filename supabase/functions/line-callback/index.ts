@@ -15,6 +15,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const APP_RETURN = 'mistella://auth/line';
+// LINE に登録したコールバックURL。トークン交換の redirect_uri は
+// 認可時と完全一致させる必要があるため固定値を使う（req.url からの再構築は不可）。
+const REDIRECT_URI =
+  'https://vmbspzivlcoxlmdgeawg.supabase.co/functions/v1/line-callback';
 
 /** アプリへ戻すHTML(カスタムスキームへ即リダイレクト) */
 function redirectToApp(params: Record<string, string>): Response {
@@ -45,7 +49,6 @@ Deno.serve(async (req: Request) => {
 
   const channelId = Deno.env.get('LINE_CHANNEL_ID')!;
   const channelSecret = Deno.env.get('LINE_CHANNEL_SECRET')!;
-  const redirectUri = `${url.origin}${url.pathname}`;
 
   try {
     // 1. 認可コード → トークン交換
@@ -55,14 +58,19 @@ Deno.serve(async (req: Request) => {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectUri,
+        redirect_uri: REDIRECT_URI,
         client_id: channelId,
         client_secret: channelSecret,
       }),
     });
     const token = await tokenRes.json();
     if (!tokenRes.ok || !token.id_token) {
-      return redirectToApp({ error: 'token_exchange_failed', state });
+      // LINE のエラー詳細を診断用に返す
+      return redirectToApp({
+        error: 'token_exchange_failed',
+        detail: `${token.error ?? ''}:${token.error_description ?? ''}`.slice(0, 200),
+        state,
+      });
     }
 
     // 2. id_token 検証
