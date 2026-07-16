@@ -40,6 +40,15 @@ export default function LoginScreen({ navigation }: Props) {
 
   const { setSession, setUser, setProfile } = useAuthStore();
 
+  const handleLineLogin = () => {
+    // LINE ログインは LINE Developers のチャネル認証情報と
+    // トークン交換用 Edge Function の設定が必要（別途構成）。
+    Alert.alert(
+      'LINEログイン',
+      'LINEログインは現在準備中です。設定完了までメールアドレスでのログインをご利用ください。',
+    );
+  };
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError('メールアドレスとパスワードを入力してください。');
@@ -183,6 +192,17 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.dividerText}>または</Text>
               <View style={styles.dividerLine} />
             </View>
+
+            {/* LINE ログイン */}
+            <TouchableOpacity
+              style={styles.lineButton}
+              onPress={handleLineLogin}
+              activeOpacity={0.85}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="chat" size={20} color="#FFFFFF" />
+              <Text style={styles.lineButtonText}>LINEでログイン</Text>
+            </TouchableOpacity>
 
             {/* 新規登録 */}
             <TouchableOpacity
@@ -374,6 +394,22 @@ const styles = StyleSheet.create({
   },
 
   // 登録ボタン
+  lineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 14,
+    paddingVertical: 15,
+    backgroundColor: '#06C755',
+    marginBottom: 12,
+  },
+  lineButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
   registerButton: {
     borderRadius: 14,
     paddingVertical: 15,

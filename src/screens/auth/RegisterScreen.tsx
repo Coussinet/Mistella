@@ -7,6 +7,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -70,30 +71,35 @@ export default function RegisterScreen({ navigation }: Props) {
     try {
       // Supabase Auth でユーザー作成（role・nickname をメタデータとして渡す）
       // DBトリガー on_auth_user_created が users / cast_profiles を自動作成する
-      const { session, user } = await signUp(
+      const { session, user, needsEmailConfirmation } = await signUp(
         email.trim(),
         password,
         nickname.trim(),
         role!,
       );
 
-      // セッション設定（メール確認不要なら即座にログイン）
-      if (session) {
-        setSession(session);
-        setUser(user);
-        setProfile({
-          id: user.id,
-          role: role!,
-          nickname: nickname.trim(),
-          avatar_url: null,
-          bio: null,
-          is_premium: false,
-          created_at: new Date().toISOString(),
-        });
-      } else {
-        // メール確認が必要な場合はログイン画面へ
-        navigation.navigate('Login');
+      if (needsEmailConfirmation || !session) {
+        // メール確認が有効な場合：確認メールのリンクで登録完了する旨を案内
+        Alert.alert(
+          '確認メールを送信しました',
+          `${email.trim()} に確認メールを送信しました。\nメール内のリンクをタップすると登録が完了します。`,
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }],
+        );
+        return;
       }
+
+      // メール確認不要な設定なら即座にログイン
+      setSession(session);
+      setUser(user);
+      setProfile({
+        id: user.id,
+        role: role!,
+        nickname: nickname.trim(),
+        avatar_url: null,
+        bio: null,
+        is_premium: false,
+        created_at: new Date().toISOString(),
+      });
     } catch (e) {
       setError(toErrorMessage(e, '予期せぬエラーが発生しました。'));
     } finally {

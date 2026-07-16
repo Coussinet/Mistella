@@ -21,17 +21,24 @@ export async function signUp(
   password: string,
   nickname: string,
   role: UserRole,
-): Promise<{ session: Session | null; user: SupabaseAuthUser }> {
+): Promise<{ session: Session | null; user: SupabaseAuthUser; needsEmailConfirmation: boolean }> {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { role, nickname },
+      // メール確認リンクからアプリに戻すためのディープリンク
+      emailRedirectTo: 'mistella://auth/confirm',
     },
   });
   if (error) throw error;
   if (!data.user) throw new Error('アカウントの作成に失敗しました。');
-  return { session: data.session, user: data.user };
+  // Supabase 側でメール確認が有効な場合、session は null になる
+  return {
+    session: data.session,
+    user: data.user,
+    needsEmailConfirmation: data.session === null,
+  };
 }
 
 // -----------------------------------------------------------
