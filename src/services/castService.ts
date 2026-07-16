@@ -96,6 +96,22 @@ export async function getTonightRequests(
   return (data ?? []) as TonightRequest[];
 }
 
+/**
+ * 未対応（未読 = status 'sent'）の今夜行ける？リクエスト数を返す。
+ * 期限切れは除外する。
+ */
+export async function getUnreadTonightRequestCount(castId: string): Promise<number> {
+  const now = new Date().toISOString();
+  const { count, error } = await supabase
+    .from('tonight_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('target_cast_id', castId)
+    .eq('status', 'sent')
+    .gt('expires_at', now);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 // -----------------------------------------------------------
 // 今夜行ける？ステータス更新
 // -----------------------------------------------------------

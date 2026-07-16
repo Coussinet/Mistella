@@ -13,6 +13,7 @@ import React from 'react';
 import { stackScreenOptions, tabBarStyles } from '@/navigation/navigationTheme';
 import { COLORS } from '@/constants/colors';
 import { useAppStore } from '@/store/appStore';
+import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import { tapLight } from '@/utils/haptics';
 import type {
   CastStackParamList,
@@ -199,6 +200,8 @@ const CUSTOMER_TABS: TabConfig[] = [
 const Tab = createBottomTabNavigator<CastTabParamList & CustomerTabParamList>();
 
 export default function AppTabNavigator({ role }: { role: UserRole }) {
+  // 未読メッセージ・未対応リクエスト数を appStore に同期（タブバッジ用）
+  useUnreadCounts();
   const unreadMessageCount = useAppStore((s) => s.unreadMessageCount);
   const unreadTonightRequestCount = useAppStore((s) => s.unreadTonightRequestCount);
 

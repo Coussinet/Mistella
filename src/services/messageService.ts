@@ -110,6 +110,35 @@ export async function sendImageMessage(
 }
 
 // -----------------------------------------------------------
+// 未読メッセージ数
+// -----------------------------------------------------------
+
+/**
+ * 自分宛ての未読メッセージ数を返す。
+ * 自分が参加するマッチの中で、相手が送信し未読のメッセージを数える。
+ */
+export async function getUnreadMessageCount(userId: string): Promise<number> {
+  // 自分のマッチ ID を取得
+  const { data: matches, error: mErr } = await supabase
+    .from('matches')
+    .select('id')
+    .or(`customer_id.eq.${userId},cast_id.eq.${userId}`);
+  if (mErr) throw mErr;
+
+  const matchIds = (matches ?? []).map((m) => m.id);
+  if (matchIds.length === 0) return 0;
+
+  const { count, error } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .in('match_id', matchIds)
+    .neq('sender_id', userId)
+    .eq('is_read', false);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+// -----------------------------------------------------------
 // 既読処理
 // -----------------------------------------------------------
 
