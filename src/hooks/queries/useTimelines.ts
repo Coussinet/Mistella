@@ -18,6 +18,7 @@ import {
   getMyTimelines,
   getTimelineById,
   getTimelines,
+  updateTimeline,
   uploadTimelineMedia,
 } from '@/services/timelineService';
 import { useAuthStore } from '@/store/authStore';
@@ -130,6 +131,26 @@ export function useCreateTimeline() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.timelines.all });
+    },
+  });
+}
+
+// -----------------------------------------------------------
+// 投稿編集（本文）
+// -----------------------------------------------------------
+
+/** 投稿本文の更新。成功時はタイムラインを invalidate する。 */
+export function useUpdateTimeline() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string | null }) =>
+      updateTimeline(id, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.timelines.all });
+    },
+    onError: (error) => {
+      showError(error, '投稿の更新に失敗しました。');
     },
   });
 }

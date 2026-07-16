@@ -9,6 +9,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,18 +18,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '@/constants/colors';
+import { COLORS, GRADIENTS } from '@/constants/colors';
 import { withAlpha } from '@/constants/theme';
 import { listItemEntering } from '@/utils/animations';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
-import Avatar from '@/components/common/Avatar';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonCard } from '@/components/common/Skeleton';
-import StatusBadge from '@/components/common/StatusBadge';
 import { useCastSearch } from '@/hooks/queries/useCastSearch';
 import type { CastProfileWithUser, CustomerStackParamList } from '@/types';
 
@@ -64,40 +64,38 @@ interface CastCardProps {
 }
 
 function CastCard({ cast, onPress }: CastCardProps) {
+  const initial = cast.user.nickname?.trim().charAt(0) || '?';
   return (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        cast.is_sponsored && styles.cardSponsored,
-      ]}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
-      {cast.is_sponsored ? (
-        <View style={styles.sponsoredBadge}>
-          <Text style={styles.sponsoredText}>Sponsored</Text>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+      {/* カード全体に写真 */}
+      {cast.user.avatar_url ? (
+        <Image source={{ uri: cast.user.avatar_url }} style={styles.cardPhoto} resizeMode="cover" />
+      ) : (
+        <View style={[styles.cardPhoto, styles.cardPhotoPlaceholder]}>
+          <Text style={styles.placeholderInitial}>{initial}</Text>
+        </View>
+      )}
+
+      {/* 出勤中バッジ（右上） */}
+      {cast.is_working ? (
+        <View style={styles.workingBadge}>
+          <View style={styles.workingDot} />
+          <Text style={styles.workingText}>出勤中</Text>
         </View>
       ) : null}
 
-      <Avatar
-        uri={cast.user.avatar_url}
-        size={72}
-        nickname={cast.user.nickname}
-        isWorking={cast.is_working}
-        style={styles.avatar}
-      />
-
-      <Text style={styles.nickname} numberOfLines={1}>
-        {cast.user.nickname}
-      </Text>
-
-      <StatusBadge status={cast.work_status} size="small" />
-
-      {cast.shop_name ? (
-        <Text style={styles.shopName} numberOfLines={1}>
-          {cast.shop_name}
+      {/* 下部グラデーション + 名前・店舗 */}
+      <LinearGradient colors={GRADIENTS.photoOverlay} style={styles.cardOverlay} />
+      <View style={styles.cardInfo}>
+        <Text style={styles.nickname} numberOfLines={1}>
+          {cast.user.nickname}
         </Text>
-      ) : null}
+        {cast.shop_name ? (
+          <Text style={styles.shopName} numberOfLines={1}>
+            {cast.shop_name}
+          </Text>
+        ) : null}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -474,47 +472,74 @@ const styles = StyleSheet.create({
   // キャストカード
   card: {
     flex: 1,
+    aspectRatio: 0.72,
     backgroundColor: COLORS.surface,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    alignItems: 'center',
-    gap: 8,
     overflow: 'hidden',
   },
-  cardSponsored: {
-    borderColor: COLORS.gold,
-    borderWidth: 1.5,
+  cardPhoto: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
-  sponsoredBadge: {
+  cardPhotoPlaceholder: {
+    backgroundColor: COLORS.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderInitial: {
+    color: COLORS.goldLight,
+    fontSize: 56,
+    fontWeight: '700',
+  },
+  cardOverlay: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.gold,
-    paddingVertical: 3,
-    alignItems: 'center',
+    bottom: 0,
+    height: 90,
   },
-  sponsoredText: {
-    color: COLORS.background,
+  workingBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(10, 10, 15, 0.6)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  workingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.success,
+  },
+  workingText: {
+    color: COLORS.success,
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
-  avatar: {
-    marginTop: 16,
+  cardInfo: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: 10,
   },
   nickname: {
     color: COLORS.text,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
-    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   shopName: {
-    color: COLORS.textMuted,
+    color: COLORS.text,
     fontSize: 11,
-    textAlign: 'center',
+    opacity: 0.85,
   },
 
   // スケルトン

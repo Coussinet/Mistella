@@ -238,7 +238,8 @@ export async function searchCasts(
     .from('cast_profiles')
     .select('*, user:users(*)')
     .range(from, to)
-    .order('is_sponsored', { ascending: false })
+    // 出勤中を優先し、その後は新しい順（Sponsored 優先表示は廃止）
+    .order('is_working', { ascending: false })
     .order('user_id', { ascending: false });
 
   if (workingOnly) {

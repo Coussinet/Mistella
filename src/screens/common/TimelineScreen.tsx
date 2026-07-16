@@ -302,7 +302,16 @@ export default function TimelineScreen() {
   } = useTimelines();
   useTimelinesRealtime();
 
-  const timelines = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const timelines = useMemo(() => {
+    const all = data?.pages.flat() ?? [];
+    // キャストのホームには他の女性(キャスト)の投稿を表示しない（自分の投稿は残す）
+    if (profile?.role === 'cast') {
+      return all.filter(
+        (t) => t.user?.role !== 'cast' || t.user_id === profile.id,
+      );
+    }
+    return all;
+  }, [data, profile]);
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {

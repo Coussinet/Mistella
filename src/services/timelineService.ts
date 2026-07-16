@@ -141,3 +141,24 @@ export async function deleteTimeline(id: string): Promise<void> {
   const { error } = await supabase.from('timelines').delete().eq('id', id);
   if (error) throw error;
 }
+
+// -----------------------------------------------------------
+// 投稿編集（本文のみ）
+// -----------------------------------------------------------
+
+/** 投稿の本文を更新する。 */
+export async function updateTimeline(
+  id: string,
+  content: string | null,
+): Promise<Timeline> {
+  const { data, error } = await supabase
+    .from('timelines')
+    .update({ content })
+    .eq('id', id)
+    .select('*, user:users(*)')
+    .single();
+
+  if (error) throw error;
+  if (!data) throw new Error('投稿の更新に失敗しました。');
+  return data as Timeline;
+}

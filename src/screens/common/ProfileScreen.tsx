@@ -5,24 +5,31 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Dimensions,
   FlatList,
   Image,
+  Modal,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
 import { useFavorites } from '@/hooks/queries/useFavorites';
 import { useFootprints } from '@/hooks/queries/useFootprints';
 import { useMyCastProfile, useMyProfile } from '@/hooks/queries/useProfile';
-import { useUserTimelines } from '@/hooks/queries/useTimelines';
+import {
+  useDeleteTimeline,
+  useUpdateTimeline,
+  useUserTimelines,
+} from '@/hooks/queries/useTimelines';
 import { useAuthStore } from '@/store/authStore';
 import type {
   CastStackParamList,
@@ -57,9 +64,31 @@ function WorkStatusBadge({ status }: { status: WorkStatus }) {
 // -----------------------------------------------------------
 // グリッドアイテム
 // -----------------------------------------------------------
-function GridItem({ item }: { item: Timeline }) {
+function GridItem({
+  item,
+  onEdit,
+  onDelete,
+}: {
+  item: Timeline;
+  onEdit: (item: Timeline) => void;
+  onDelete: (item: Timeline) => void;
+}) {
+  // 長押しで編集・削除メニューを表示（自分の投稿）
+  const handleLongPress = () => {
+    Alert.alert('投稿の操作', undefined, [
+      { text: '編集', onPress: () => onEdit(item) },
+      { text: '削除', style: 'destructive', onPress: () => onDelete(item) },
+      { text: 'キャンセル', style: 'cancel' },
+    ]);
+  };
+
   return (
-    <View style={styles.gridItem}>
+    <TouchableOpacity
+      style={styles.gridItem}
+      onLongPress={handleLongPress}
+      delayLongPress={300}
+      activeOpacity={0.8}
+    >
       {item.media_url && item.media_type === 'image' ? (
         <Image source={{ uri: item.media_url }} style={styles.gridImage} resizeMode="cover" />
       ) : item.media_url && item.media_type === 'video' ? (
@@ -73,7 +102,7 @@ function GridItem({ item }: { item: Timeline }) {
           </Text>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -142,6 +171,36 @@ export default function ProfileScreen() {
     navigation.navigate('EditProfile');
   };
 
+  // 投稿の編集・削除
+  const deleteTimelineMutation = useDeleteTimeline();
+  const updateTimelineMutation = useUpdateTimeline();
+  const [editingPost, setEditingPost] = useState<Timeline | null>(null);
+  const [editText, setEditText] = useState('');
+
+  const handleEditPost = (item: Timeline) => {
+    setEditingPost(item);
+    setEditText(item.content ?? '');
+  };
+
+  const handleDeletePost = (item: Timeline) => {
+    Alert.alert('投稿を削除', 'この投稿を削除しますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '削除',
+        style: 'destructive',
+        onPress: () => deleteTimelineMutation.mutate(item.id),
+      },
+    ]);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingPost) return;
+    updateTimelineMutation.mutate(
+      { id: editingPost.id, content: editText.trim() || null },
+      { onSuccess: () => setEditingPost(null) },
+    );
+  };
+
   if (isPending) {
     return (
       <View style={styles.container}>
@@ -166,11 +225,14 @@ export default function ProfileScreen() {
   }
 
   return (
+    <>
     <FlatList
       data={timelines}
       keyExtractor={(item) => item.id}
       numColumns={3}
-      renderItem={({ item }) => <GridItem item={item} />}
+      renderItem={({ item }) => (
+        <GridItem item={item} onEdit={handleEditPost} onDelete={handleDeletePost} />
+      )}
       ListHeaderComponent={
         <View>
           {/* プロフィールヘッダー */}
@@ -203,19 +265,27 @@ export default function ProfileScreen() {
             <Text style={styles.bio}>{profile.bio}</Text>
           ) : null}
 
-          {/* 統計 */}
+          {/* 統計（タップで各一覧へ） */}
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => navigation.navigate('Footprints')}
+              activeOpacity={0.7}
+            >
               <MaterialIcons name="visibility" size={20} color={COLORS.neonBlue} />
               <Text style={styles.statNumber}>{footprintCount}</Text>
               <Text style={styles.statLabel}>足跡</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => navigation.navigate('Favorites')}
+              activeOpacity={0.7}
+            >
               <MaterialIcons name="star" size={20} color={COLORS.gold} />
               <Text style={styles.statNumber}>{favoriteCount}</Text>
               <Text style={styles.statLabel}>お気に入り</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <MaterialIcons name="dynamic-feed" size={20} color={COLORS.textSecondary} />
@@ -277,6 +347,47 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.listContent}
       style={styles.container}
     />
+
+    {/* 投稿編集モーダル */}
+    <Modal
+      visible={editingPost !== null}
+      animationType="fade"
+      transparent
+      onRequestClose={() => setEditingPost(null)}
+    >
+      <View style={styles.editOverlay}>
+        <View style={styles.editSheet}>
+          <Text style={styles.editTitle}>投稿を編集</Text>
+          <TextInput
+            style={styles.editInput}
+            value={editText}
+            onChangeText={setEditText}
+            multiline
+            maxLength={300}
+            placeholder="投稿内容"
+            placeholderTextColor={COLORS.textMuted}
+          />
+          <View style={styles.editActions}>
+            <TouchableOpacity
+              style={styles.editCancel}
+              onPress={() => setEditingPost(null)}
+            >
+              <Text style={styles.editCancelText}>キャンセル</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.editSave}
+              onPress={handleSaveEdit}
+              disabled={updateTimelineMutation.isPending}
+            >
+              <Text style={styles.editSaveText}>
+                {updateTimelineMutation.isPending ? '保存中...' : '保存'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -285,6 +396,59 @@ export default function ProfileScreen() {
 // -----------------------------------------------------------
 
 const styles = StyleSheet.create({
+  editOverlay: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    padding: SPACING.xl,
+  },
+  editSheet: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  editTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  editInput: {
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    color: COLORS.text,
+    padding: SPACING.sm,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    fontSize: 15,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  editCancel: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+  },
+  editCancelText: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.textSecondary,
+  },
+  editSave: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.gold,
+  },
+  editSaveText: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.background,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
