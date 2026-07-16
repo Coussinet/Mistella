@@ -42,8 +42,14 @@ export function useRealtimeInvalidation({
     if (!enabled) return;
 
     const keys = JSON.parse(keysSignature) as QueryKey[];
+    // チャンネル名はマウントごとに一意にする。
+    // supabase-js は同名チャンネルの既存インスタンスを返すため、
+    // 高速な画面往復で「購読解除前の再購読」となり
+    // "cannot add postgres_changes callbacks after subscribe()" 例外
+    // （本番ではクラッシュ）が発生する。
+    const uniqueName = `${channelName}:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const channel = supabase
-      .channel(channelName)
+      .channel(uniqueName)
       .on(
         'postgres_changes',
         { event: event as '*', schema: 'public', table, ...(filter ? { filter } : {}) },

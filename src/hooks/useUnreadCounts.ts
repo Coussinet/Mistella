@@ -46,7 +46,8 @@ export function useUnreadCounts(): void {
 
     // messages の変更で未読数を再計算
     const msgChannel = supabase
-      .channel(`unread-messages:${userId}`)
+      // 購読ごとに一意な名前（同名再利用は再購読例外の原因）
+      .channel(`unread-messages:${userId}:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages' },
@@ -57,7 +58,7 @@ export function useUnreadCounts(): void {
     // tonight_requests の変更で未対応数を再計算（キャストのみ）
     const reqChannel = isCast
       ? supabase
-          .channel(`unread-tonight:${userId}`)
+          .channel(`unread-tonight:${userId}:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'tonight_requests' },

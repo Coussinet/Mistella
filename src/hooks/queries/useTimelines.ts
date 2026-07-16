@@ -59,7 +59,8 @@ export function useTimelinesRealtime(): void {
 
   useEffect(() => {
     const channel = supabase
-      .channel('timelines-realtime')
+      // マウントごとに一意な名前にする（同名再利用は再購読例外の原因になる）
+      .channel(`timelines-realtime:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'timelines' },

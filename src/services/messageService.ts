@@ -172,8 +172,10 @@ export function subscribeToMessages(
   matchId: string,
   onMessage: (msg: Message) => void,
 ): () => void {
+  // チャンネル名は購読ごとに一意にする（同名再利用は
+  // 「購読解除前の再購読」例外＝本番クラッシュの原因になる）
   const channel = supabase
-    .channel(`messages:match_id=eq.${matchId}`)
+    .channel(`messages:${matchId}:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
     .on(
       'postgres_changes',
       {

@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { getProfile, getCastProfile } from '@/services/authService';
 import { registerPushToken } from '@/services/notificationService';
 import { queryClient } from '@/lib/queryClient';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
@@ -38,52 +39,59 @@ export default function App() {
   useEffect(() => {
     setLoading(true);
 
+    /**
+     * プロフィール一式を取得して authStore に反映する。
+     * 起動直後はトークン更新と競合して一時的に失敗することがあるため、
+     * 少し待ってリトライする（初回起動でローディングが止まる問題への対策）。
+     */
+    const loadUserData = async (userId: string) => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const profile = await getProfile(userId);
+          setProfile(profile);
+          registerPushToken(userId).catch(() => {});
+          if (profile.role === 'cast') {
+            try {
+              const castProfile = await getCastProfile(userId);
+              setCastProfile(castProfile);
+            } catch {
+              // cast_profiles が未作成の場合は null のまま
+            }
+          }
+          return;
+        } catch {
+          // 1秒待ってリトライ（トークン更新完了待ち）
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+      // 3回失敗した場合はプロフィール未取得のまま（listener の後続イベントで再試行される）
+    };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase.auth.getSession().then(async (result: any) => {
       const session = result.data.session;
       setSession(session);
       if (session?.user) {
         setUser(session.user);
-        try {
-          const profile = await getProfile(session.user.id);
-          setProfile(profile);
-          registerPushToken(session.user.id).catch(() => {});
-          if (profile.role === 'cast') {
-            try {
-              const castProfile = await getCastProfile(session.user.id);
-              setCastProfile(castProfile);
-            } catch {
-              // cast_profilesが未作成の場合はnull
-            }
-          }
-        } catch {
-          // プロフィール未作成の場合
-        }
+        await loadUserData(session.user.id);
       }
     }).finally(() => {
       setLoading(false);
     });
 
+    // 注意: onAuthStateChange のコールバック内で Supabase を直接 await すると
+    // supabase-js の内部ロックとデッドロックする（公式が警告している既知問題）。
+    // コールバックは同期処理のみとし、Supabase 呼び出しは setTimeout で
+    // ロック解放後に実行する。
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setSession(session);
       if (session?.user) {
         setUser(session.user);
-        try {
-          const profile = await getProfile(session.user.id);
-          setProfile(profile);
-          registerPushToken(session.user.id).catch(() => {});
-          if (profile.role === 'cast') {
-            try {
-              const castProfile = await getCastProfile(session.user.id);
-              setCastProfile(castProfile);
-            } catch {
-              // cast_profilesが未作成の場合
-            }
-          }
-        } catch {
-          setProfile(null);
-        }
+        const userId = session.user.id;
+        setTimeout(() => {
+          loadUserData(userId);
+        }, 0);
       } else {
         setUser(null);
         setProfile(null);
@@ -100,7 +108,9 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <NavigationContainer>
             <StatusBar style="light" />
-            <AppNavigator />
+            <ErrorBoundary>
+              <AppNavigator />
+            </ErrorBoundary>
           </NavigationContainer>
         </QueryClientProvider>
       </SafeAreaProvider>
