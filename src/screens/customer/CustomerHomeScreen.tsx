@@ -8,8 +8,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -47,6 +52,11 @@ export default function CustomerHomeScreen() {
   const { profile } = useAuthStore();
 
   const [postFormVisible, setPostFormVisible] = useState(false);
+
+  const closePostForm = useCallback(() => {
+    Keyboard.dismiss();
+    setPostFormVisible(false);
+  }, []);
 
   // -----------------------------------------------------------
   // タイムライン取得（無限スクロール）
@@ -89,12 +99,12 @@ export default function CustomerHomeScreen() {
           mediaUri,
           mediaType,
         });
-        setPostFormVisible(false);
+        closePostForm();
       } catch (e: unknown) {
         showError(e, '投稿に失敗しました。');
       }
     },
-    [postMutation],
+    [closePostForm, postMutation],
   );
 
   // -----------------------------------------------------------
@@ -222,18 +232,44 @@ export default function CustomerHomeScreen() {
         visible={postFormVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setPostFormVisible(false)}
+        statusBarTranslucent
+        onRequestClose={closePostForm}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.postFormSheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>タイムラインに投稿</Text>
-            <TimelinePostForm
-              onPost={handlePost}
-              onCancel={() => setPostFormVisible(false)}
-            />
-          </View>
-        </View>
+        <KeyboardAvoidingView
+          style={styles.modalKeyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={styles.modalOverlay} onPress={closePostForm}>
+            <Pressable
+              style={styles.postFormSheet}
+              onPress={(event) => event.stopPropagation()}
+            >
+              <View style={styles.sheetHandle} />
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetTitleGroup}>
+                  <Text style={styles.sheetTitle}>タイムラインに投稿</Text>
+                  <Text style={styles.sheetSubtitle}>投稿は24時間後に自動で非表示になります</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closePostForm}
+                  accessibilityRole="button"
+                  accessibilityLabel="投稿画面を閉じる"
+                >
+                  <MaterialIcons name="close" size={22} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.postFormContent}
+              >
+                <TimelinePostForm onPost={handlePost} onCancel={closePostForm} />
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -299,6 +335,9 @@ const styles = StyleSheet.create({
   },
 
   // 投稿モーダル
+  modalKeyboardView: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: COLORS.overlay,
@@ -308,11 +347,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    paddingTop: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: Platform.OS === 'ios' ? SPACING.xxl : SPACING.lg,
+    paddingTop: SPACING.xs,
+    borderTopWidth: 1,
+    borderColor: withAlpha(COLORS.text, 0.1),
+    maxHeight: '92%',
   },
   sheetHandle: {
     width: 40,
@@ -320,13 +360,36 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.border,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.sm,
+  },
+  sheetHeader: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  sheetTitleGroup: {
+    flex: 1,
   },
   sheetTitle: {
     color: COLORS.text,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 14,
-    textAlign: 'center',
+    ...TYPOGRAPHY.h3,
+  },
+  sheetSubtitle: {
+    color: COLORS.textSecondary,
+    ...TYPOGRAPHY.caption,
+    marginTop: 2,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surfaceLight,
+    marginLeft: SPACING.sm,
+  },
+  postFormContent: {
+    paddingBottom: SPACING.xs,
   },
 });

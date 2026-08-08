@@ -1,9 +1,9 @@
 // ============================================================
 // Mistella - ナビゲーション共通テーマ
-// スタックヘッダーとガラス風フローティングタブバーのスタイルを一元管理する。
+// スタックヘッダーと、安全領域に対応したボトムタブのスタイルを一元管理する。
 // ============================================================
 
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { COLORS } from '@/constants/colors';
 import { SHADOWS, RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 
@@ -16,30 +16,39 @@ export const stackScreenOptions = {
   contentStyle: { backgroundColor: COLORS.background },
 };
 
-/** ガラス風タブバーの背景（iOS はブラー併用前提で薄め） */
-const GLASS_BG = Platform.OS === 'ios' ? COLORS.glassBg : COLORS.glassBgSolid;
-
 export const tabBarStyles = StyleSheet.create({
   tabBar: {
-    backgroundColor: GLASS_BG,
+    position: 'absolute',
+    backgroundColor: COLORS.glassBgSolid,
     borderTopWidth: 0,
-    marginHorizontal: SPACING.sm,
-    marginBottom: SPACING.xs,
-    borderRadius: RADIUS.xl,
-    height: 72,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
     borderWidth: 1,
-    borderColor: withAlpha(COLORS.text, 0.1),
+    borderBottomWidth: 0,
+    borderColor: withAlpha(COLORS.text, 0.09),
+    paddingHorizontal: SPACING.xs,
+    paddingTop: SPACING.xs,
     ...SHADOWS.floating,
   },
   tabBarLabel: {
     ...TYPOGRAPHY.caption,
-    fontSize: 10,
+    fontSize: 10.5,
+    lineHeight: 14,
     fontWeight: '600',
-    marginBottom: 1,
+    marginTop: 1,
   },
   tabBarItem: {
-    paddingTop: SPACING.xs,
-    paddingBottom: SPACING.xxs,
+    minHeight: 52,
+  },
+  tabBarIcon: {
+    width: 42,
+    height: 28,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabBarIconActive: {
+    backgroundColor: withAlpha(COLORS.gold, 0.14),
   },
   badge: {
     backgroundColor: COLORS.error,

@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 
 // -----------------------------------------------------------
 // Props
@@ -129,6 +130,7 @@ export default function TimelinePostForm({
         maxLength={300}
         textAlignVertical="top"
         editable={!isPosting}
+        accessibilityLabel="投稿内容"
       />
 
       {/* メディアプレビュー */}
@@ -189,6 +191,8 @@ export default function TimelinePostForm({
             onPress={onCancel}
             style={styles.cancelButton}
             disabled={isPosting}
+            accessibilityRole="button"
+            accessibilityLabel="投稿をキャンセル"
           >
             <Text style={styles.cancelText}>キャンセル</Text>
           </TouchableOpacity>
@@ -199,13 +203,13 @@ export default function TimelinePostForm({
               (!canPost || isPosting) && styles.postButtonDisabled,
             ]}
             disabled={!canPost || isPosting}
+            accessibilityRole="button"
+            accessibilityLabel="タイムラインに投稿"
           >
             {isPosting ? (
               <ActivityIndicator size="small" color={COLORS.background} />
             ) : (
-              <Text style={styles.postButtonText}>
-                投稿する（24時間限定）
-              </Text>
+              <Text style={styles.postButtonText}>投稿する</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -221,31 +225,30 @@ export default function TimelinePostForm({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: withAlpha(COLORS.text, 0.1),
     overflow: 'hidden',
   },
   input: {
     color: COLORS.text,
-    fontSize: 15,
-    lineHeight: 22,
-    padding: 16,
-    minHeight: 100,
+    ...TYPOGRAPHY.body,
+    padding: SPACING.md,
+    minHeight: 120,
     maxHeight: 200,
   },
   previewWrapper: {
     position: 'relative',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderRadius: RADIUS.md,
     overflow: 'hidden',
   },
   preview: {
     width: '100%',
     height: 180,
     backgroundColor: COLORS.surfaceLight,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
   },
   removeMedia: {
     position: 'absolute',
@@ -258,9 +261,9 @@ const styles = StyleSheet.create({
   toolbar: {
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
   },
   mediaButtons: {
     flexDirection: 'row',
@@ -268,35 +271,41 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   mediaButton: {
-    padding: 6,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.md,
+    backgroundColor: withAlpha(COLORS.neonBlue, 0.08),
   },
   videoHint: {
     color: COLORS.textMuted,
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     marginLeft: 4,
   },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 10,
+    gap: SPACING.xs,
   },
   cancelButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    minHeight: 48,
+    paddingHorizontal: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceLight,
   },
   cancelText: {
     color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
+    ...TYPOGRAPHY.label,
   },
   postButton: {
+    flex: 1,
     backgroundColor: COLORS.gold,
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    minWidth: 160,
+    borderRadius: RADIUS.md,
+    minHeight: 48,
+    paddingHorizontal: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: COLORS.gold,
@@ -310,8 +319,7 @@ const styles = StyleSheet.create({
   },
   postButtonText: {
     color: COLORS.background,
-    fontSize: 13,
+    ...TYPOGRAPHY.bodyBold,
     fontWeight: '700',
-    letterSpacing: 0.3,
   },
 });

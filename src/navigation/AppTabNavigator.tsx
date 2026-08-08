@@ -10,6 +10,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { stackScreenOptions, tabBarStyles } from '@/navigation/navigationTheme';
 import { COLORS } from '@/constants/colors';
 import { useAppStore } from '@/store/appStore';
@@ -204,6 +206,7 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
   useUnreadCounts();
   const unreadMessageCount = useAppStore((s) => s.unreadMessageCount);
   const unreadTonightRequestCount = useAppStore((s) => s.unreadTonightRequestCount);
+  const insets = useSafeAreaInsets();
 
   const tabs = role === 'cast' ? CAST_TABS : CUSTOMER_TABS;
   const badgeCounts = {
@@ -215,11 +218,19 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: tabBarStyles.tabBar,
+        tabBarStyle: [
+          tabBarStyles.tabBar,
+          {
+            height: 64 + insets.bottom,
+            paddingBottom: Math.max(insets.bottom, 8),
+          },
+        ],
         tabBarActiveTintColor: COLORS.gold,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: tabBarStyles.tabBarLabel,
         tabBarItemStyle: tabBarStyles.tabBarItem,
+        tabBarAllowFontScaling: false,
+        tabBarHideOnKeyboard: true,
       }}
     >
       {tabs.map((tab) => {
@@ -232,8 +243,15 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
             listeners={{ tabPress: () => tapLight() }}
             options={{
               tabBarLabel: tab.label,
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name={tab.icon} size={size} color={color} />
+              tabBarIcon: ({ color, focused }) => (
+                <View
+                  style={[
+                    tabBarStyles.tabBarIcon,
+                    focused && tabBarStyles.tabBarIconActive,
+                  ]}
+                >
+                  <MaterialIcons name={tab.icon} size={23} color={color} />
+                </View>
               ),
               tabBarBadge: badgeCount > 0 ? badgeCount : undefined,
               tabBarBadgeStyle: tabBarStyles.badge,
