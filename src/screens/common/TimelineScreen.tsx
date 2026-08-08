@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { avatarSource } from '@/constants/demoAvatars';
 import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '@/constants/theme';
 import PageHeader from '@/components/common/PageHeader';
 import WorkStatusToggle from '@/components/cast/WorkStatusToggle';
@@ -75,7 +76,7 @@ function TimelineItem({ item, onAvatarPress }: TimelineItemProps) {
           disabled={!onAvatarPress}
         >
           {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            <Image source={avatarSource(avatarUri)} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarFallback]}>
               <MaterialIcons name="person" size={20} color={COLORS.textMuted} />

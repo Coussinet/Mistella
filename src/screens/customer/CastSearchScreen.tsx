@@ -21,6 +21,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, GRADIENTS } from '@/constants/colors';
+import { avatarSource } from '@/constants/demoAvatars';
 import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
@@ -73,7 +74,7 @@ function CastCard({ cast, onPress }: CastCardProps) {
     >
       {/* カード全体に写真 */}
       {cast.user.avatar_url ? (
-        <Image source={{ uri: cast.user.avatar_url }} style={styles.cardPhoto} resizeMode="cover" />
+        <Image source={avatarSource(cast.user.avatar_url)} style={styles.cardPhoto} resizeMode="cover" />
       ) : (
         <View style={[styles.cardPhoto, styles.cardPhotoPlaceholder]}>
           <Text style={styles.placeholderInitial}>{initial}</Text>

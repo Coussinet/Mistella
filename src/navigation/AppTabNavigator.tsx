@@ -8,6 +8,7 @@
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { View } from 'react-native';
@@ -70,7 +71,14 @@ function CommonScreens({ role }: { role: UserRole }) {
       <Stack.Screen name="PartnerNote" component={PartnerNoteScreen} options={{ title: '記録詳細' }} />
       <Stack.Screen name="MeetingRecordEdit" component={MeetingRecordEditScreen} options={{ title: '会った記録' }} />
       {role === 'customer' && (
-        <Stack.Screen name="SendTonightRequest" component={TonightSendScreen} options={{ title: '今夜行ける？' }} />
+        <Stack.Screen
+          name="SendTonightRequest"
+          component={TonightSendScreen}
+          options={{
+            title: '今夜行ける？',
+            headerBackTitleVisible: false,
+          }}
+        />
       )}
     </Stack.Group>
   );
@@ -201,6 +209,21 @@ const CUSTOMER_TABS: TabConfig[] = [
 
 const Tab = createBottomTabNavigator<CastTabParamList & CustomerTabParamList>();
 
+/** 詳細・編集画面では、その画面固有の固定操作と重ならないようメインタブを隠す。 */
+const TAB_HIDDEN_ROUTES = new Set([
+  'UserProfile',
+  'ChatRoom',
+  'PartnerNote',
+  'MeetingRecordEdit',
+  'SendTonightRequest',
+  'ShopInfo',
+  'TonightRequests',
+  'EditProfile',
+  'Favorites',
+  'Footprints',
+  'NotificationSettings',
+]);
+
 export default function AppTabNavigator({ role }: { role: UserRole }) {
   // 未読メッセージ・未対応リクエスト数を appStore に同期（タブバッジ用）
   useUnreadCounts();
@@ -216,21 +239,28 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
 
   return (
     <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: [
-          tabBarStyles.tabBar,
-          {
-            height: 64 + insets.bottom,
-            paddingBottom: Math.max(insets.bottom, 8),
-          },
-        ],
-        tabBarActiveTintColor: COLORS.gold,
-        tabBarInactiveTintColor: COLORS.textMuted,
-        tabBarLabelStyle: tabBarStyles.tabBarLabel,
-        tabBarItemStyle: tabBarStyles.tabBarItem,
-        tabBarAllowFontScaling: false,
-        tabBarHideOnKeyboard: true,
+      screenOptions={({ route }) => {
+        const focusedRoute = getFocusedRouteNameFromRoute(route);
+        const hidesTabBar = focusedRoute ? TAB_HIDDEN_ROUTES.has(focusedRoute) : false;
+
+        return {
+          headerShown: false,
+          tabBarStyle: hidesTabBar
+            ? { display: 'none' }
+            : [
+                tabBarStyles.tabBar,
+                {
+                  height: 64 + insets.bottom,
+                  paddingBottom: Math.max(insets.bottom, 8),
+                },
+              ],
+          tabBarActiveTintColor: COLORS.gold,
+          tabBarInactiveTintColor: COLORS.textMuted,
+          tabBarLabelStyle: tabBarStyles.tabBarLabel,
+          tabBarItemStyle: tabBarStyles.tabBarItem,
+          tabBarAllowFontScaling: false,
+          tabBarHideOnKeyboard: true,
+        };
       }}
     >
       {tabs.map((tab) => {

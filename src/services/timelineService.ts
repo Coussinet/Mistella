@@ -88,7 +88,9 @@ export async function uploadTimelineMedia(
 
   const ext = isImage ? 'jpg' : 'mp4';
   const contentType = isImage ? 'image/jpeg' : 'video/mp4';
-  const path = `timelines/${userId}/${Date.now()}.${ext}`;
+  // Storage RLS は先頭フォルダと auth.uid() の一致を検証するため、
+  // 必ずユーザーIDをパスの先頭に置く。
+  const path = `${userId}/timelines/${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from('media')

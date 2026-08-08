@@ -11,6 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { avatarSource } from '@/constants/demoAvatars';
 
 // -----------------------------------------------------------
 // Props
@@ -50,7 +51,7 @@ export default function Avatar({
     <View style={[styles.wrapper, containerStyle, style]}>
       {uri ? (
         <Image
-          source={{ uri }}
+          source={avatarSource(uri)}
           style={[styles.image, containerStyle]}
           resizeMode="cover"
         />

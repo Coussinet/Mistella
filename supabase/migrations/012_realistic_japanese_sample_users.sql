@@ -60,6 +60,44 @@ ON CONFLICT (id) DO UPDATE SET
   is_premium = EXCLUDED.is_premium,
   is_blocked = false;
 
+-- アプリに同梱した架空の日本人女性ポートレートへ割り当てる。
+-- カスタムURIは src/constants/demoAvatars.ts でバンドル画像に解決される。
+UPDATE public.users AS users
+SET avatar_url = demo.avatar_uri
+FROM (VALUES
+  ('052eef72-d746-48e7-9363-b4d57bb680f1'::uuid, 'mistella-demo://cast/01'),
+  ('3b00328f-b00d-4fdb-bd34-412e6293ebbc'::uuid, 'mistella-demo://cast/02'),
+  ('bd7523ae-5484-4e70-852e-b03310a6a66e'::uuid, 'mistella-demo://cast/03'),
+  ('de7a13ee-1165-428c-9380-af159626c3db'::uuid, 'mistella-demo://cast/04'),
+  ('d50839f3-1eb8-4c96-bb6f-09cb94d3eff6'::uuid, 'mistella-demo://cast/05'),
+  ('dd666b72-43a5-42bd-a1d5-687c038e497a'::uuid, 'mistella-demo://cast/06'),
+  ('ddb8474f-8fcb-43db-9384-5b7e8d9d69be'::uuid, 'mistella-demo://cast/07'),
+  ('01f85ed7-513d-4cc3-b327-7623ee148461'::uuid, 'mistella-demo://cast/08'),
+  ('f8ce2c78-a2d1-40ff-9041-c679b2008612'::uuid, 'mistella-demo://cast/09'),
+  ('2d8c7144-6e42-46c3-ba15-d2241b9d217c'::uuid, 'mistella-demo://cast/10'),
+  ('c1728007-6e40-4f06-a3ac-fabdda157438'::uuid, 'mistella-demo://cast/11'),
+  ('c608266a-d86a-4e44-9c45-a8065ec09a08'::uuid, 'mistella-demo://cast/12'),
+  ('6547b5a1-9191-4c0f-83cd-81920d77220e'::uuid, 'mistella-demo://cast/13'),
+  ('8e7d1b83-6988-4c93-bf87-38d4603d027f'::uuid, 'mistella-demo://cast/14'),
+  ('2753a995-f69c-43b1-928e-091f4311964e'::uuid, 'mistella-demo://cast/15'),
+  ('269d4ffa-f91d-4a97-84a0-88de21551f7e'::uuid, 'mistella-demo://cast/16'),
+  ('31b69d4c-721a-4d5a-a737-1c8bf9d464fb'::uuid, 'mistella-demo://cast/17'),
+  ('f4e0b085-4e36-4ab2-8cd8-342b71b70c29'::uuid, 'mistella-demo://cast/18'),
+  ('fba2ae41-e291-4441-96a8-4705c62a9648'::uuid, 'mistella-demo://cast/19'),
+  ('12a96e1b-8276-4e10-90c4-303aaf65c8d1'::uuid, 'mistella-demo://cast/20'),
+  ('c54d320e-7287-462b-a49b-8bf54e179588'::uuid, 'mistella-demo://cast/21'),
+  ('c37942ef-d161-4443-8881-39ef22c64b53'::uuid, 'mistella-demo://cast/22'),
+  ('3101c235-ee5f-4116-acbf-a6ab722ac40b'::uuid, 'mistella-demo://cast/23'),
+  ('573967d8-beb0-46bc-86ac-9abe599a3686'::uuid, 'mistella-demo://cast/24'),
+  ('beefbfd8-b590-4004-aeb9-9ea327fe3927'::uuid, 'mistella-demo://cast/25'),
+  ('029f0096-892c-4e05-ae4d-7483641a5b39'::uuid, 'mistella-demo://cast/26'),
+  ('95fc4127-5564-413b-a327-683be6634d5a'::uuid, 'mistella-demo://cast/27'),
+  ('8e687609-9356-4a07-8b9a-04baebd2c819'::uuid, 'mistella-demo://cast/28'),
+  ('588b9119-12ef-4690-865c-5609f5318428'::uuid, 'mistella-demo://cast/29'),
+  ('0da1d02e-f434-4071-ac5a-e0cb333a1249'::uuid, 'mistella-demo://cast/30')
+) AS demo(user_id, avatar_uri)
+WHERE users.id = demo.user_id;
+
 -- -----------------------------------------------------------------------------
 -- 基本プロフィール: 顧客（男性）30名
 -- -----------------------------------------------------------------------------

@@ -10,13 +10,16 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
+  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, {
@@ -25,6 +28,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { COLORS, GRADIENTS } from '@/constants/colors';
+import { avatarSource } from '@/constants/demoAvatars';
 import { RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import type { CastProfile, User, WorkStatus } from '@/types';
 
@@ -105,12 +109,23 @@ export default function ProfileHero({
   const isCast = user.role === 'cast';
   const initial = user.nickname?.trim().charAt(0) || '?';
 
+  const openShopAddress = async () => {
+    const address = castProfile?.shop_address?.trim();
+    if (!address) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('マップを開けませんでした', '通信環境を確認して、もう一度お試しください。');
+    }
+  };
+
   return (
     <Animated.View style={[styles.hero, parallaxStyle]}>
       {gallery.length > 0 ? (
         <>
           {gallery.length === 1 ? (
-            <Image source={{ uri: gallery[0] }} style={styles.photo} resizeMode="cover" />
+            <Image source={avatarSource(gallery[0])} style={styles.photo} resizeMode="cover" />
           ) : (
             <ScrollView
               horizontal
@@ -123,7 +138,7 @@ export default function ProfileHero({
               {gallery.map((url, i) => (
                 <Image
                   key={`${url}-${i}`}
-                  source={{ uri: url }}
+                  source={avatarSource(url)}
                   style={styles.galleryImage}
                   resizeMode="cover"
                 />
@@ -172,12 +187,21 @@ export default function ProfileHero({
           </View>
         ) : null}
         {isCast && castProfile?.shop_address ? (
-          <View style={styles.shopRow}>
-            <MaterialIcons name="place" size={13} color={COLORS.textSecondary} />
+          <TouchableOpacity
+            style={[styles.shopRow, styles.addressButton]}
+            onPress={openShopAddress}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel={`${castProfile.shop_address}をGoogleマップで開く`}
+          >
+            <View style={styles.mapIconCircle}>
+              <MaterialIcons name="map" size={14} color={COLORS.goldLight} />
+            </View>
             <Text style={styles.shopAddress} numberOfLines={1}>
               {castProfile.shop_address}
             </Text>
-          </View>
+            <MaterialIcons name="open-in-new" size={13} color={COLORS.goldLight} />
+          </TouchableOpacity>
         ) : null}
       </View>
     </Animated.View>
@@ -290,5 +314,20 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     flexShrink: 1,
+  },
+  addressButton: {
+    alignSelf: 'flex-start',
+    minHeight: 32,
+    paddingRight: SPACING.xs,
+    borderRadius: RADIUS.pill,
+    backgroundColor: withAlpha(COLORS.background, 0.42),
+  },
+  mapIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: withAlpha(COLORS.gold, 0.18),
   },
 });

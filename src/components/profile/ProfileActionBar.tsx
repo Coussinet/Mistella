@@ -10,6 +10,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -17,7 +18,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
-import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { RADIUS, SHADOWS, SPACING } from '@/constants/theme';
 import { tapMedium } from '@/utils/haptics';
 
 /** コンテンツ下部パディング算出用のバー高さ（マージン込みの目安） */
@@ -116,6 +117,7 @@ export default function ProfileActionBar({
   onTonight,
   onMessage,
 }: ProfileActionBarProps) {
+  const insets = useSafeAreaInsets();
   const content = (
     <View style={styles.row}>
       <BurstIconButton
@@ -142,26 +144,21 @@ export default function ProfileActionBar({
         onPress={onMessage}
       />
       {showTonight && (
-        <Pressable
-          style={({ pressed }) => [styles.tonightButton, pressed && { opacity: 0.85 }]}
-          onPress={() => {
-            tapMedium();
-            onTonight();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="今夜行ける？"
-        >
-          <MaterialIcons name="nightlight-round" size={18} color={COLORS.background} />
-          <Text style={styles.tonightText} numberOfLines={1}>
-            今夜行ける？
-          </Text>
-        </Pressable>
+        <BurstIconButton
+          icon="nightlight-round"
+          label="今夜行ける？"
+          color={COLORS.gold}
+          onPress={onTonight}
+        />
       )}
     </View>
   );
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View
+      style={[styles.container, { bottom: Math.max(insets.bottom, SPACING.sm) }]}
+      pointerEvents="box-none"
+    >
       {Platform.OS === 'ios' ? (
         <BlurView intensity={40} tint="dark" style={[styles.bar, styles.barBlur]}>
           {content}
@@ -206,9 +203,10 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   iconAction: {
+    flex: 1,
     alignItems: 'center',
     gap: 2,
-    minWidth: 60,
+    minWidth: 52,
   },
   iconCircle: {
     width: 44,
@@ -222,20 +220,5 @@ const styles = StyleSheet.create({
   iconLabel: {
     fontSize: 10,
     fontWeight: '600',
-  },
-  tonightButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xxs,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.gold,
-    ...SHADOWS.glow,
-  },
-  tonightText: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.background,
   },
 });

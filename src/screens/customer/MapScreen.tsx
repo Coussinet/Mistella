@@ -30,6 +30,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { COLORS } from '@/constants/colors';
+import { avatarSource } from '@/constants/demoAvatars';
 import { DARK_MAP_STYLE } from '@/constants/mapStyle';
 import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import Avatar from '@/components/common/Avatar';
@@ -99,7 +100,7 @@ function CastMarkerView({ cast }: CastMarkerViewProps) {
       ) : null}
       <View style={styles.pin}>
         {cast.user.avatar_url ? (
-          <Image source={{ uri: cast.user.avatar_url }} style={styles.pinAvatar} />
+          <Image source={avatarSource(cast.user.avatar_url)} style={styles.pinAvatar} />
         ) : (
           <View style={[styles.pinAvatar, styles.pinAvatarFallback]}>
             <Text style={styles.pinInitial}>{cast.user.nickname?.[0] ?? '?'}</Text>
