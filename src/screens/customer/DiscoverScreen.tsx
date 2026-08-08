@@ -9,13 +9,14 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
-import { RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
+import { RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import PageHeader from '@/components/common/PageHeader';
 import CastSearchScreen from '@/screens/customer/CastSearchScreen';
 import MapScreen from '@/screens/customer/MapScreen';
 
 type DiscoverMode = 'list' | 'map';
 
-const MODES: Array<{ key: DiscoverMode; label: string; icon: 'view-agenda' | 'map' }> = [
+const MODES: { key: DiscoverMode; label: string; icon: 'view-agenda' | 'map' }[] = [
   { key: 'list', label: 'リスト', icon: 'view-agenda' },
   { key: 'map', label: 'マップ', icon: 'map' },
 ];
@@ -32,10 +33,12 @@ export default function DiscoverScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* ヘッダー: タイトル + リスト⇄マップ切替 */}
-      <View style={styles.header}>
-        <Text style={styles.title}>さがす</Text>
-        <View style={styles.segment}>
+      <PageHeader
+        title="さがす"
+        description="気になる人とお店を、今いる場所から"
+        compact
+        action={
+          <View style={styles.segment}>
           {MODES.map((m) => {
             const active = mode === m.key;
             return (
@@ -60,8 +63,9 @@ export default function DiscoverScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
-      </View>
+          </View>
+        }
+      />
 
       {/* 本体: 両ビューをマウントしたまま表示切替（状態・地図位置を保持） */}
       <View style={[styles.body, mode !== 'list' && styles.hidden]}>
@@ -80,18 +84,6 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.xs,
-    paddingBottom: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.text,
   },
   segment: {
     flexDirection: 'row',

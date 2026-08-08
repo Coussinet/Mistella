@@ -5,13 +5,14 @@
 
 import { Platform, StyleSheet } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { SHADOWS, RADIUS } from '@/constants/theme';
+import { SHADOWS, RADIUS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 
 /** ネイティブスタック共通のヘッダー設定 */
 export const stackScreenOptions = {
-  headerStyle: { backgroundColor: COLORS.surface },
+  headerStyle: { backgroundColor: COLORS.background },
   headerTintColor: COLORS.text,
-  headerTitleStyle: { color: COLORS.text, fontWeight: '600' as const },
+  headerShadowVisible: false,
+  headerTitleStyle: { color: COLORS.text, ...TYPOGRAPHY.h3 },
   contentStyle: { backgroundColor: COLORS.background },
 };
 
@@ -22,22 +23,23 @@ export const tabBarStyles = StyleSheet.create({
   tabBar: {
     backgroundColor: GLASS_BG,
     borderTopWidth: 0,
-    marginHorizontal: 12,
-    marginBottom: 10,
-    borderRadius: RADIUS.pill,
-    height: 76,
-    borderWidth: 0.5,
-    borderColor: COLORS.glassBorder,
+    marginHorizontal: SPACING.sm,
+    marginBottom: SPACING.xs,
+    borderRadius: RADIUS.xl,
+    height: 72,
+    borderWidth: 1,
+    borderColor: withAlpha(COLORS.text, 0.1),
     ...SHADOWS.floating,
   },
   tabBarLabel: {
+    ...TYPOGRAPHY.caption,
     fontSize: 10,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   tabBarItem: {
-    paddingTop: 6,
-    paddingBottom: 4,
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.xxs,
   },
   badge: {
     backgroundColor: COLORS.error,

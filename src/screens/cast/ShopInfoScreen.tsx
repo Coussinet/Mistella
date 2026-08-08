@@ -4,7 +4,7 @@
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -35,16 +35,20 @@ export default function ShopInfoScreen({ navigation }: Props) {
   const [shopName, setShopName] = useState(castProfile?.shop_name ?? '');
   const [shopAddress, setShopAddress] = useState(castProfile?.shop_address ?? '');
   const [priceInfo, setPriceInfo] = useState(castProfile?.price_info ?? '');
+  const hasHydratedForm = useRef(false);
 
   // サーバー上の最新の店舗情報をフォームへ反映する
   const { data: castData } = useMyCastProfile();
 
   useEffect(() => {
-    if (castData) {
+    if (!castData || hasHydratedForm.current) return;
+    const frame = requestAnimationFrame(() => {
+      hasHydratedForm.current = true;
       setShopName(castData.shop_name ?? '');
       setShopAddress(castData.shop_address ?? '');
       setPriceInfo(castData.price_info ?? '');
-    }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [castData]);
 
   // -----------------------------------------------------------

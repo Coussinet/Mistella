@@ -276,7 +276,7 @@ export default function ContactsScreen() {
   const entries = useMemo(() => {
     const notes = notesQuery.data ?? [];
     const noteByPartner = new Map(notes.map((n) => [n.partner_id, n]));
-    const list: Array<{ partnerId: string; note: PartnerNote | null; partner: User | undefined }> =
+    const list: { partnerId: string; note: PartnerNote | null; partner: User | undefined }[] =
       notes.map((n) => ({ partnerId: n.partner_id, note: n, partner: n.partner }));
 
     // 記録だけあってメモ未作成の相手も一覧に出す
@@ -318,7 +318,7 @@ export default function ContactsScreen() {
       <FlatList
         data={filteredEntries}
         keyExtractor={(item) => item.partnerId}
-        renderItem={({ item, index }) => {
+        renderItem={({ item }) => {
           const summary = summaries[item.partnerId];
           const metaParts: string[] = [];
           if (summary?.lastMetAt) {

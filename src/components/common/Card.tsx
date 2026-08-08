@@ -7,7 +7,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { COLORS } from '@/constants/colors';
-import { RADIUS, SHADOWS, SPACING } from '@/constants/theme';
+import { RADIUS, SHADOWS, SPACING, withAlpha } from '@/constants/theme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -27,11 +27,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: withAlpha(COLORS.text, 0.1),
     padding: SPACING.md,
     ...SHADOWS.card,
   },
   highlighted: {
-    borderColor: COLORS.gold,
+    borderColor: withAlpha(COLORS.gold, 0.7),
   },
 });

@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
@@ -49,6 +50,8 @@ function MatchItem({ match, myUserId, onPress }: MatchItemProps) {
       style={styles.item}
       onPress={() => onPress(match, partner)}
       activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={`${partner.nickname}とのメッセージを開く`}
     >
       {partner.avatar_url ? (
         <Image source={{ uri: partner.avatar_url }} style={styles.avatar} />
@@ -104,7 +107,6 @@ export default function MatchesScreen() {
         )}
         onRefresh={refetch}
         refreshing={isRefetching}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <EmptyState
             icon="favorite-border"
@@ -130,7 +132,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   listContent: {
-    paddingVertical: 8,
+    padding: SPACING.sm,
+    paddingBottom: 112,
   },
   emptyList: {
     flexGrow: 1,
@@ -140,9 +143,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: withAlpha(COLORS.text, 0.1),
+    marginBottom: SPACING.xs,
+    ...SHADOWS.card,
   },
   avatar: {
     width: 52,
@@ -156,20 +164,14 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    gap: 4,
+    gap: SPACING.xxs,
   },
   nickname: {
     color: COLORS.text,
-    fontSize: 15,
-    fontWeight: '600',
+    ...TYPOGRAPHY.bodyBold,
   },
   matchTime: {
     color: COLORS.textSecondary,
-    fontSize: 12,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginLeft: 80,
+    ...TYPOGRAPHY.caption,
   },
 });

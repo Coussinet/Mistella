@@ -26,6 +26,8 @@ export const SPACING = {
   xxl: 32,
   /** 48 */
   xxxl: 48,
+  /** 64: 画面の大きな区切り */
+  jumbo: 64,
 } as const;
 
 // ---- 角丸 ---------------------------------------------------
@@ -37,8 +39,8 @@ export const RADIUS = {
   md: 12,
   /** 16: カード */
   lg: 16,
-  /** 20: シート・大カード */
-  xl: 20,
+  /** 24: シート・大カード */
+  xl: 24,
   /** 28: フローティングタブバー・ピル型ボタン */
   pill: 28,
   /** 円形（アバター等は width/2 を優先） */
@@ -54,19 +56,19 @@ type TypographyPreset = Pick<
 
 export const TYPOGRAPHY = {
   /** 画面タイトル */
-  h1: { fontSize: 28, fontWeight: '700', lineHeight: 36, letterSpacing: 0.5 },
+  h1: { fontSize: 28, fontWeight: '700', lineHeight: 39, letterSpacing: 0.2 },
   /** セクション見出し */
-  h2: { fontSize: 20, fontWeight: '700', lineHeight: 28, letterSpacing: 0.5 },
+  h2: { fontSize: 20, fontWeight: '700', lineHeight: 29, letterSpacing: 0.15 },
   /** カードタイトル・小見出し */
-  h3: { fontSize: 16, fontWeight: '600', lineHeight: 22, letterSpacing: 0.3 },
+  h3: { fontSize: 16, fontWeight: '600', lineHeight: 24, letterSpacing: 0.1 },
   /** 本文 */
-  body: { fontSize: 15, fontWeight: '400', lineHeight: 22 },
+  body: { fontSize: 15, fontWeight: '400', lineHeight: 24 },
   /** 本文（強調） */
-  bodyBold: { fontSize: 15, fontWeight: '600', lineHeight: 22 },
+  bodyBold: { fontSize: 15, fontWeight: '600', lineHeight: 24 },
   /** 補足・メタ情報 */
-  caption: { fontSize: 12, fontWeight: '400', lineHeight: 16 },
+  caption: { fontSize: 12, fontWeight: '400', lineHeight: 18 },
   /** フォームラベル・タブラベル */
-  label: { fontSize: 13, fontWeight: '600', lineHeight: 18, letterSpacing: 0.2 },
+  label: { fontSize: 13, fontWeight: '600', lineHeight: 19, letterSpacing: 0.1 },
 } as const satisfies Record<string, TypographyPreset>;
 
 // ---- シャドウ ------------------------------------------------
@@ -76,17 +78,17 @@ export const SHADOWS = {
   card: {
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 3,
   },
   /** フローティング要素（FAB・タブバー） */
   floating: {
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 24,
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    elevation: 12,
   },
   /** ゴールドの発光（アクセント要素） */
   glow: {

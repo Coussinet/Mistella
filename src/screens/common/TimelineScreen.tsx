@@ -23,6 +23,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import PageHeader from '@/components/common/PageHeader';
 import WorkStatusToggle from '@/components/cast/WorkStatusToggle';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
@@ -341,6 +343,11 @@ export default function TimelineScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <PageHeader
+        title="ホーム"
+        description="お客様とのつながりを、丁寧に育てる"
+        compact
+      />
       <FlatList
         data={timelines}
         keyExtractor={(item) => item.id}
@@ -375,6 +382,8 @@ export default function TimelineScreen() {
         style={styles.fab}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="タイムラインに投稿する"
       >
         <MaterialIcons name="add" size={28} color={COLORS.background} />
       </TouchableOpacity>
@@ -394,18 +403,17 @@ export default function TimelineScreen() {
 const styles = StyleSheet.create({
   workHeader: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 14,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
-    gap: 10,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
+    gap: SPACING.xs,
   },
   workHeaderLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...TYPOGRAPHY.label,
     color: COLORS.textSecondary,
     letterSpacing: 0.3,
   },
@@ -414,8 +422,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   listContent: {
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingTop: SPACING.xxs,
+    paddingBottom: 112,
   },
   emptyList: {
     flexGrow: 1,
@@ -423,10 +431,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.surface,
-    marginHorizontal: 12,
-    marginVertical: 6,
-    borderRadius: 12,
-    padding: 14,
+    marginHorizontal: SPACING.sm,
+    marginVertical: SPACING.xs,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -494,19 +502,15 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: 104,
+    right: SPACING.lg,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    ...SHADOWS.glow,
   },
   // Modal
   modalOverlay: {
@@ -516,10 +520,10 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 36,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -535,8 +539,8 @@ const styles = StyleSheet.create({
   textInput: {
     backgroundColor: COLORS.surfaceLight,
     color: COLORS.text,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm,
     fontSize: 14,
     minHeight: 100,
     textAlignVertical: 'top',

@@ -7,7 +7,7 @@
 import { Alert } from 'react-native';
 
 /** Supabase / ネットワーク系エラーメッセージの日本語化マップ */
-const MESSAGE_MAP: Array<[pattern: string, message: string]> = [
+const MESSAGE_MAP: [pattern: string, message: string][] = [
   ['Invalid login credentials', 'メールアドレスまたはパスワードが正しくありません。'],
   ['Email not confirmed', 'メールアドレスの確認が完了していません。確認メールをご確認ください。'],
   ['Too many requests', 'しばらく時間をおいてから再度お試しください。'],

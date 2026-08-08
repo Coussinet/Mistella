@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import type { CastProfile, User } from '@/types';
 import Avatar from '@/components/common/Avatar';
 import StatusBadge from '@/components/common/StatusBadge';
@@ -45,6 +46,8 @@ export default function CastCard({
       style={[styles.card, cast.is_sponsored && styles.cardSponsored]}
       onPress={onPress}
       activeOpacity={0.88}
+      accessibilityRole="button"
+      accessibilityLabel={`${user.nickname}のプロフィールを開く`}
     >
       {/* スポンサーバッジ */}
       {cast.is_sponsored && (
@@ -126,14 +129,15 @@ export default function CastCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
     marginBottom: 12,
+    ...SHADOWS.card,
   },
   cardSponsored: {
-    borderColor: COLORS.gold,
+    borderColor: withAlpha(COLORS.gold, 0.8),
     borderWidth: 1.5,
   },
   sponsoredBadge: {
@@ -171,8 +175,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   nickname: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...TYPOGRAPHY.h3,
     color: COLORS.text,
     flexShrink: 1,
   },
@@ -182,12 +185,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   shopName: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: COLORS.textMuted,
     flexShrink: 1,
   },
   bio: {
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     lineHeight: 17,
   },
@@ -212,11 +215,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gold,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 20,
-    gap: 5,
+    borderRadius: RADIUS.pill,
+    gap: SPACING.xxs,
   },
   tonightBtnText: {
-    fontSize: 13,
+    ...TYPOGRAPHY.label,
     fontWeight: '700',
     color: COLORS.background,
   },

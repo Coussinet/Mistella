@@ -1,8 +1,10 @@
+// eslint-disable-next-line import/no-duplicates
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+// eslint-disable-next-line import/no-duplicates
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainer } from '@react-navigation/native';
@@ -67,7 +69,6 @@ export default function App() {
       // 3回失敗した場合はプロフィール未取得のまま（listener の後続イベントで再試行される）
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase.auth.getSession().then(async (result: any) => {
       const session = result.data.session;
       setSession(session);
@@ -83,7 +84,6 @@ export default function App() {
     // supabase-js の内部ロックとデッドロックする（公式が警告している既知問題）。
     // コールバックは同期処理のみとし、Supabase 呼び出しは setTimeout で
     // ロック解放後に実行する。
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setSession(session);
       if (session?.user) {
@@ -100,7 +100,7 @@ export default function App() {
     });
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [setCastProfile, setLoading, setProfile, setSession, setUser]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

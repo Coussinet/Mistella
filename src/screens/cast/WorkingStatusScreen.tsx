@@ -5,7 +5,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -42,15 +42,19 @@ export default function WorkingStatusScreen({ navigation }: Props) {
   const [locationEnabled, setLocationEnabled] = useState(
     castProfile?.location_enabled ?? false,
   );
+  const hasHydratedStatus = useRef(false);
 
   // サーバー上の最新の出勤情報を反映する
   const { data: castData } = useMyCastProfile();
 
   useEffect(() => {
-    if (castData) {
+    if (!castData || hasHydratedStatus.current) return;
+    const frame = requestAnimationFrame(() => {
+      hasHydratedStatus.current = true;
       setWorkStatus(castData.work_status);
       setLocationEnabled(castData.location_enabled);
-    }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [castData]);
 
   const statusMutation = useUpdateWorkStatus();

@@ -163,8 +163,11 @@ export default function MapScreen() {
   // フィルタ切替などで件数が減った場合にインデックスを戻す
   useEffect(() => {
     if (mapCasts.length > 0 && activeIndex >= mapCasts.length) {
-      setActiveIndex(0);
-      carouselRef.current?.scrollToOffset({ offset: 0, animated: false });
+      const frame = requestAnimationFrame(() => {
+        setActiveIndex(0);
+        carouselRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
+      return () => cancelAnimationFrame(frame);
     }
   }, [mapCasts.length, activeIndex]);
 

@@ -12,6 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 
 // -----------------------------------------------------------
 // Props
@@ -88,38 +89,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    minHeight: 50,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    minHeight: 52,
   },
   icon: {
     marginRight: 6,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.4,
+    ...TYPOGRAPHY.bodyBold,
+    letterSpacing: 0.2,
   },
 
   // --- Variants ---
 
   primary: {
     backgroundColor: COLORS.gold,
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    ...SHADOWS.glow,
   },
   primaryLabel: {
     color: COLORS.background,
   },
 
   secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: COLORS.gold,
+    backgroundColor: withAlpha(COLORS.gold, 0.08),
+    borderWidth: 1,
+    borderColor: withAlpha(COLORS.gold, 0.65),
   },
   secondaryLabel: {
     color: COLORS.gold,
@@ -134,11 +130,7 @@ const styles = StyleSheet.create({
 
   danger: {
     backgroundColor: COLORS.error,
-    shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    ...SHADOWS.card,
   },
   dangerLabel: {
     color: COLORS.text,

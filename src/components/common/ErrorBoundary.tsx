@@ -27,7 +27,6 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error) {
     // 将来 Sentry 等を導入したらここで送信する
-    // eslint-disable-next-line no-console
     if (__DEV__) console.error('ErrorBoundary caught:', error);
   }
 

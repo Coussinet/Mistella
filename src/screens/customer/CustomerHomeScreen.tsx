@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
@@ -24,6 +25,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import TimelineItem from '@/components/timeline/TimelineItem';
 import TimelinePostForm from '@/components/timeline/TimelinePostForm';
 import WorkingCastsCarousel from '@/components/cast/WorkingCastsCarousel';
+import PageHeader from '@/components/common/PageHeader';
 import {
   useCreateTimeline,
   useDeleteTimeline,
@@ -156,23 +158,32 @@ export default function CustomerHomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* ヘッダー */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.tonightFAB}
-          onPress={() =>
-            navigation.navigate('SendTonightRequest', {})
-          }
-          activeOpacity={0.85}
-        >
-          <MaterialIcons
-            name="local-fire-department"
-            size={18}
-            color={COLORS.background}
-          />
-          <Text style={styles.tonightFABText}>今夜行ける？</Text>
-        </TouchableOpacity>
-      </View>
+      <PageHeader
+        title="ホーム"
+        description="今夜のきっかけを、気軽に見つけよう"
+        action={
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.postAction}
+              onPress={() => setPostFormVisible(true)}
+              activeOpacity={0.8}
+              accessibilityLabel="タイムラインに投稿する"
+            >
+              <MaterialIcons name="edit" size={16} color={COLORS.gold} />
+              <Text style={styles.postActionText}>投稿</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tonightFAB}
+              onPress={() => navigation.navigate('SendTonightRequest', {})}
+              activeOpacity={0.85}
+              accessibilityLabel="今夜行けるキャストを探す"
+            >
+              <MaterialIcons name="local-fire-department" size={17} color={COLORS.background} />
+              <Text style={styles.tonightFABText}>今夜</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
 
       {/* タイムラインリスト */}
       <FlatList
@@ -238,16 +249,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 
-  // ヘッダー
-  header: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    gap: SPACING.xs,
+  },
+  postAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 38,
+    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xxs,
+    borderRadius: RADIUS.pill,
+    backgroundColor: withAlpha(COLORS.gold, 0.08),
+    borderWidth: 1,
+    borderColor: withAlpha(COLORS.gold, 0.5),
+  },
+  postActionText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.gold,
   },
 
   // 今夜行ける？FABボタン
@@ -255,27 +275,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.gold,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    gap: 5,
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 6,
+    minHeight: 38,
+    borderRadius: RADIUS.pill,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xxs,
+    ...SHADOWS.glow,
   },
   tonightFABText: {
     color: COLORS.background,
-    fontSize: 13,
+    ...TYPOGRAPHY.label,
     fontWeight: '700',
-    letterSpacing: 0.2,
   },
 
   // リスト
   listContent: {
-    paddingTop: 8,
-    paddingBottom: 32,
+    paddingTop: SPACING.xs,
+    paddingBottom: 112,
   },
   emptyList: {
     flexGrow: 1,
@@ -290,8 +306,8 @@ const styles = StyleSheet.create({
   },
   postFormSheet: {
     backgroundColor: COLORS.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
     paddingHorizontal: 16,
     paddingBottom: 32,
     paddingTop: 8,

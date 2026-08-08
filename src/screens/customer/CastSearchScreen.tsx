@@ -21,7 +21,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, GRADIENTS } from '@/constants/colors';
-import { withAlpha } from '@/constants/theme';
+import { RADIUS, SHADOWS, SPACING, TYPOGRAPHY, withAlpha } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { addFootprint } from '@/services/customerService';
 import EmptyState from '@/components/common/EmptyState';
@@ -64,7 +64,13 @@ interface CastCardProps {
 function CastCard({ cast, onPress }: CastCardProps) {
   const initial = cast.user.nickname?.trim().charAt(0) || '?';
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={`${cast.user.nickname}のプロフィールを開く`}
+    >
       {/* カード全体に写真 */}
       {cast.user.avatar_url ? (
         <Image source={{ uri: cast.user.avatar_url }} style={styles.cardPhoto} resizeMode="cover" />
@@ -196,7 +202,12 @@ export default function CastSearchScreen() {
           clearButtonMode="while-editing"
         />
         {keyword.length > 0 ? (
-          <TouchableOpacity onPress={() => setKeyword('')}>
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={() => setKeyword('')}
+            accessibilityRole="button"
+            accessibilityLabel="検索語をクリア"
+          >
             <MaterialIcons name="close" size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
         ) : null}
@@ -381,20 +392,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surfaceLight,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    gap: 8,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xs,
   },
   searchInput: {
     flex: 1,
     color: COLORS.text,
-    fontSize: 15,
-    paddingVertical: 12,
+    ...TYPOGRAPHY.body,
+    paddingVertical: SPACING.sm,
+  },
+  clearButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // フィルタ
@@ -403,20 +420,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   filterContainer: {
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.xs,
     alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    borderRadius: RADIUS.pill,
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xxs,
   },
   chipActive: {
     backgroundColor: COLORS.gold,
@@ -433,7 +450,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
+    ...TYPOGRAPHY.caption,
     fontWeight: '600',
   },
   chipTextActive: {
@@ -455,16 +472,16 @@ const styles = StyleSheet.create({
 
   // リスト
   listContent: {
-    paddingHorizontal: 12,
-    paddingBottom: 24,
+    paddingHorizontal: SPACING.sm,
+    paddingBottom: 112,
   },
   cardCell: {
     flex: 1,
   },
   row: {
-    gap: 12,
-    paddingHorizontal: 4,
-    marginBottom: 12,
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.xxs,
+    marginBottom: SPACING.sm,
   },
 
   // キャストカード
@@ -472,8 +489,11 @@ const styles = StyleSheet.create({
     flex: 1,
     aspectRatio: 0.72,
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: withAlpha(COLORS.text, 0.1),
+    ...SHADOWS.card,
   },
   cardPhoto: {
     ...StyleSheet.absoluteFillObject,
@@ -522,21 +542,20 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     position: 'absolute',
-    left: 10,
-    right: 10,
-    bottom: 10,
+    left: SPACING.sm,
+    right: SPACING.sm,
+    bottom: SPACING.sm,
   },
   nickname: {
     color: COLORS.text,
-    fontSize: 15,
-    fontWeight: '700',
+    ...TYPOGRAPHY.h3,
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   shopName: {
     color: COLORS.text,
-    fontSize: 11,
+    ...TYPOGRAPHY.caption,
     opacity: 0.85,
   },
 
@@ -544,7 +563,7 @@ const styles = StyleSheet.create({
   skeletonGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
   },
   skeletonItem: {
     width: '50%',
@@ -564,10 +583,10 @@ const styles = StyleSheet.create({
   },
   areaSheet: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
-    paddingHorizontal: 16,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
+    paddingBottom: SPACING.xxxl,
+    paddingHorizontal: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
   },

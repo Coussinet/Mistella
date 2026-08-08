@@ -88,11 +88,9 @@ function DateField({ label, value, onChange, placeholder, disabled }: DateFieldP
 
 function RecordCard({
   record,
-  isCastRole,
   onPress,
 }: {
   record: MeetingRecord;
-  isCastRole: boolean;
   onPress: () => void;
 }) {
   return (
@@ -173,16 +171,19 @@ export default function PartnerNoteScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     if (initialized.current || noteQuery.data === undefined) return;
-    initialized.current = true;
-    const note = noteQuery.data;
-    if (note) {
-      setNicknameCalled(note.nickname_called ?? '');
-      setNoteText(note.note_text ?? '');
-      setPreferences(note.preferences ?? '');
-      setBottleHistory(note.bottle_history ?? '');
-      setNextVisitDate(note.next_visit_date ?? '');
-      setBirthday(note.birthday ?? '');
-    }
+    const frame = requestAnimationFrame(() => {
+      initialized.current = true;
+      const note = noteQuery.data;
+      if (note) {
+        setNicknameCalled(note.nickname_called ?? '');
+        setNoteText(note.note_text ?? '');
+        setPreferences(note.preferences ?? '');
+        setBottleHistory(note.bottle_history ?? '');
+        setNextVisitDate(note.next_visit_date ?? '');
+        setBirthday(note.birthday ?? '');
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [noteQuery.data]);
 
   const records = recordsQuery.data ?? [];
@@ -349,7 +350,6 @@ export default function PartnerNoteScreen({ route, navigation }: Props) {
               <RecordCard
                 key={record.id}
                 record={record}
-                isCastRole={isCastRole}
                 onPress={() =>
                   navigation.navigate('MeetingRecordEdit', {
                     partnerId,
