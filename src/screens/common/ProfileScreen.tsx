@@ -25,6 +25,7 @@ import ErrorView from '@/components/common/ErrorView';
 import { SkeletonList } from '@/components/common/Skeleton';
 import { useFavorites } from '@/hooks/queries/useFavorites';
 import { useFootprints } from '@/hooks/queries/useFootprints';
+import { useAnnouncements } from '@/hooks/queries/useAnnouncements';
 import { useMyCastProfile, useMyProfile } from '@/hooks/queries/useProfile';
 import {
   useDeleteTimeline,
@@ -140,11 +141,13 @@ export default function ProfileScreen() {
   const timelinesQuery = useUserTimelines(user?.id);
   const footprintsQuery = useFootprints();
   const favoritesQuery = useFavorites();
+  const announcementsQuery = useAnnouncements();
 
   const timelines = timelinesQuery.data ?? [];
   const footprintCount = footprintsQuery.data?.length ?? 0;
   const favoriteCount = favoritesQuery.data?.favorites.length ?? 0;
   const castData = castQuery.data ?? null;
+  const unreadAnnouncementCount = announcementsQuery.data?.filter((announcement) => !announcement.isRead).length ?? 0;
 
   const isPending =
     profileQuery.isPending ||
@@ -329,6 +332,29 @@ export default function ProfileScreen() {
               <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
             </TouchableOpacity>
           )}
+
+          {/* 運営からの大切なお知らせ。男女どちらもマイページから確認できる。 */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Announcements')}
+            accessibilityRole="button"
+            accessibilityLabel={
+              unreadAnnouncementCount > 0
+                ? `お知らせ、未読${unreadAnnouncementCount}件`
+                : 'お知らせ'
+            }
+          >
+            <MaterialIcons name="campaign" size={22} color={COLORS.gold} />
+            <Text style={styles.menuItemText}>お知らせ</Text>
+            {unreadAnnouncementCount > 0 ? (
+              <View style={styles.announcementBadge}>
+                <Text style={styles.announcementBadgeText}>
+                  {unreadAnnouncementCount > 99 ? '99+' : unreadAnnouncementCount}
+                </Text>
+              </View>
+            ) : null}
+            <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
 
           {/* 通知設定リンク */}
           <TouchableOpacity
@@ -686,5 +712,20 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 15,
     fontWeight: '500',
+  },
+  announcementBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: COLORS.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  announcementBadgeText: {
+    color: COLORS.background,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

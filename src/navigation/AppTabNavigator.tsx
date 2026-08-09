@@ -46,6 +46,7 @@ import ProfileScreen from '@/screens/common/ProfileScreen';
 import EditProfileScreen from '@/screens/common/EditProfileScreen';
 import FavoritesScreen from '@/screens/common/FavoritesScreen';
 import FootprintsScreen from '@/screens/common/FootprintsScreen';
+import AnnouncementsScreen from '@/screens/common/AnnouncementsScreen';
 import UserProfileScreen from '@/screens/common/UserProfileScreen';
 import NotificationSettingsScreen from '@/screens/common/NotificationSettingsScreen';
 
@@ -168,6 +169,7 @@ function ProfileStack({ role }: { role: UserRole }) {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'プロフィール編集' }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'お気に入り' }} />
       <Stack.Screen name="Footprints" component={FootprintsScreen} options={{ title: '足跡' }} />
+      <Stack.Screen name="Announcements" component={AnnouncementsScreen} options={{ title: 'お知らせ' }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: '通知設定' }} />
       {role === 'customer' && (
         <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: '会った記録' }} />
@@ -224,6 +226,7 @@ const TAB_HIDDEN_ROUTES = new Set([
   'EditProfile',
   'Favorites',
   'Footprints',
+  'Announcements',
   'NotificationSettings',
 ]);
 

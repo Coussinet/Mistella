@@ -294,6 +294,7 @@ export type CastStackParamList = {
   EditProfile: undefined;
   Favorites: undefined;
   Footprints: undefined;
+  Announcements: undefined;
   NotificationSettings: undefined;
 };
 
@@ -313,6 +314,7 @@ export type CustomerStackParamList = {
   EditProfile: undefined;
   Favorites: undefined;
   Footprints: undefined;
+  Announcements: undefined;
   NotificationSettings: undefined;
 };
 

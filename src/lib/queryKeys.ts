@@ -45,5 +45,6 @@ export const queryKeys = {
         : (['meetings', 'list', authorId] as const),
   },
   notificationSettings: (userId: string) => ['notificationSettings', userId] as const,
+  announcements: (userId: string) => ['announcements', userId] as const,
   likedUsers: (userId: string) => ['likedUsers', userId] as const,
 };
