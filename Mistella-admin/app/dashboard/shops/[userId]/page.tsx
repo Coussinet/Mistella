@@ -1,9 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export default async function ShopEditPage({ params }: { params: { userId: string } }) {
-  const supabase = await createClient()
+  const { admin: supabase } = await requireAdmin()
 
   const [{ data: shop }, { data: user }] = await Promise.all([
     supabase.from('cast_profiles').select('*').eq('user_id', params.userId).single(),
@@ -14,7 +13,7 @@ export default async function ShopEditPage({ params }: { params: { userId: strin
 
   async function saveShop(formData: FormData) {
     'use server'
-    const admin = createAdminClient()
+    const { admin } = await requireAdmin()
     await admin.from('cast_profiles').update({
       shop_name:    formData.get('shop_name') as string || null,
       shop_address: formData.get('shop_address') as string || null,
@@ -28,7 +27,7 @@ export default async function ShopEditPage({ params }: { params: { userId: strin
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-2">店舗編集</h1>
       <p className="text-gray-400 text-sm mb-6">キャスト: {(user as any)?.nickname}</p>
-      <form action={saveShop} className="bg-gray-800 rounded-xl p-6 space-y-4">
+      <form action={saveShop} className="bg-gray-900/80 border border-white/10 rounded-2xl p-6 space-y-4">
         <div>
           <label className="block text-sm text-gray-400 mb-1">店舗名</label>
           <input

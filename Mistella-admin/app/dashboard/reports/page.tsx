@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { ReportStatus } from '@/types'
+import { requireAdmin } from '@/lib/admin/auth'
 
 const STATUS_LABEL: Record<ReportStatus, string> = {
   pending:   '未対応',
@@ -24,7 +24,7 @@ export default async function ReportsPage({
 }: {
   searchParams: { status?: string }
 }) {
-  const supabase = await createClient()
+  const { admin: supabase } = await requireAdmin()
   const statusFilter = (searchParams.status as ReportStatus) || 'pending'
 
   const { data: reports } = await supabase
@@ -53,7 +53,7 @@ export default async function ReportsPage({
           </Link>
         ))}
       </div>
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
+      <div className="bg-gray-900/80 border border-white/10 rounded-2xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-700 text-gray-400">
             <tr>

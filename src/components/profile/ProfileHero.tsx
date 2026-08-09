@@ -119,6 +119,9 @@ export default function ProfileHero({
       Alert.alert('マップを開けませんでした', '通信環境を確認して、もう一度お試しください。');
     }
   };
+  const shiftLabel = castProfile?.shift_starts_at && castProfile.shift_ends_at
+    ? formatShift(castProfile.shift_starts_at, castProfile.shift_ends_at)
+    : null;
 
   return (
     <Animated.View style={[styles.hero, parallaxStyle]}>
@@ -186,6 +189,12 @@ export default function ProfileHero({
             </Text>
           </View>
         ) : null}
+        {isCast && castProfile?.is_working && shiftLabel ? (
+          <View style={styles.shopRow}>
+            <MaterialIcons name="schedule" size={13} color={COLORS.goldLight} />
+            <Text style={styles.shiftText}>{shiftLabel}</Text>
+          </View>
+        ) : null}
         {isCast && castProfile?.shop_address ? (
           <TouchableOpacity
             style={[styles.shopRow, styles.addressButton]}
@@ -206,6 +215,14 @@ export default function ProfileHero({
       </View>
     </Animated.View>
   );
+}
+
+function formatShift(startsAt: string, endsAt: string) {
+  const starts = new Date(startsAt);
+  const ends = new Date(endsAt);
+  const time = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  const nextDay = starts.toDateString() === ends.toDateString() ? '' : '（翌日）';
+  return `本日 ${time(starts)}〜${time(ends)}${nextDay}`;
 }
 
 // -----------------------------------------------------------
@@ -314,6 +331,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     flexShrink: 1,
+  },
+  shiftText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.goldLight,
+    fontWeight: '700',
   },
   addressButton: {
     alignSelf: 'flex-start',

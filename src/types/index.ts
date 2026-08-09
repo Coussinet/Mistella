@@ -49,6 +49,10 @@ export interface CastProfile {
   charm_point: string | null;
   favorite_drink: string | null;
   service_style: string | null;
+  /** 現在の勤務予定開始日時 */
+  shift_starts_at: string | null;
+  /** 現在の勤務予定終了日時 */
+  shift_ends_at: string | null;
   favorite_topics: string | null;
   activities: string | null;
   customer_message: string | null;

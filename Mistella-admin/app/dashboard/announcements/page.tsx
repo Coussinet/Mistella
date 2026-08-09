@@ -1,15 +1,15 @@
-import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export default async function AnnouncementsPage() {
-  const supabase = await createClient()
+  const { admin: supabase } = await requireAdmin()
   const { data: announcements } = await supabase
     .from('announcements')
     .select('*')
     .order('created_at', { ascending: false })
 
   const TARGET_LABEL: Record<string, string> = {
-    all_male: '男性全員', all_female: '女性全員', individual: '個別',
+    all: '全ユーザー', all_male: '男性全員', all_female: '女性全員', individual: '個別',
   }
 
   return (
@@ -23,7 +23,7 @@ export default async function AnnouncementsPage() {
           + 新規作成
         </Link>
       </div>
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
+      <div className="bg-gray-900/80 border border-white/10 rounded-2xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-700 text-gray-400">
             <tr>

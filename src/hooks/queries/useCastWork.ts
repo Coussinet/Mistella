@@ -23,17 +23,25 @@ export function useUpdateWorkStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (status: WorkStatus) => {
+    mutationFn: ({
+      status,
+      schedule,
+    }: {
+      status: WorkStatus;
+      schedule?: { startsAt: string; endsAt: string };
+    }) => {
       if (!user) throw new Error('ログインが必要です。');
-      return updateWorkStatus(user.id, status);
+      return updateWorkStatus(user.id, status, schedule);
     },
-    onSuccess: (_data, status) => {
+    onSuccess: (_data, { status, schedule }) => {
       const { castProfile, setCastProfile } = useAuthStore.getState();
       if (castProfile) {
         setCastProfile({
           ...castProfile,
           work_status: status,
           is_working: status !== 'off',
+          shift_starts_at: schedule?.startsAt ?? castProfile.shift_starts_at,
+          shift_ends_at: schedule?.endsAt ?? castProfile.shift_ends_at,
         });
       }
       // 出勤状態はキャスト一覧・詳細の表示に影響するためまとめて invalidate する

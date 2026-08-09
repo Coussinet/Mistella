@@ -1,154 +1,104 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/admin/auth'
 
-type TargetType = 'all_male' | 'all_female' | 'individual'
+type TargetType = 'all' | 'all_male' | 'all_female' | 'individual'
 
-export default function NewAnnouncementPage() {
-  const router = useRouter()
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
-  const [targetType, setTargetType] = useState<TargetType>('all_male')
-  const [targetUserId, setTargetUserId] = useState('')
-  const [userSearch, setUserSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<{ id: string; nickname: string }[]>([])
-  const [sending, setSending] = useState(false)
-  const [error, setError] = useState('')
+export default async function NewAnnouncementPage() {
+  const { admin } = await requireAdmin()
+  const { data: users } = await admin
+    .from('users')
+    .select('id, nickname, role')
+    .eq('is_blocked', false)
+    .order('nickname')
 
-  const handleSearch = async () => {
-    if (!userSearch.trim()) return
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('users')
-      .select('id, nickname')
-      .ilike('nickname', `%${userSearch}%`)
-      .limit(10)
-    setSearchResults(data ?? [])
-  }
+  async function sendAnnouncement(formData: FormData) {
+    'use server'
+    const { admin, adminUser, sessionClient } = await requireAdmin()
+    const title = String(formData.get('title') ?? '').trim()
+    const body = String(formData.get('body') ?? '').trim()
+    const targetType = String(formData.get('target_type') ?? '') as TargetType
+    const targetUserId = String(formData.get('target_user_id') ?? '').trim()
+    const allowedTargets: TargetType[] = ['all', 'all_male', 'all_female', 'individual']
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title || !body) return
-    if (targetType === 'individual' && !targetUserId) {
-      setError('個別送信の場合は対象ユーザーを選択してください。')
-      return
+    if (!title || !body || !allowedTargets.includes(targetType)) {
+      throw new Error('入力内容が正しくありません。')
     }
-    setSending(true)
-    setError('')
-    const supabase = createClient()
+    if (targetType === 'individual' && !targetUserId) {
+      throw new Error('個別送信の対象ユーザーを選択してください。')
+    }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('認証エラー'); setSending(false); return }
-
-    const { data: announcement, error: insertError } = await supabase
+    const { data: announcement, error: insertError } = await admin
       .from('announcements')
       .insert({
-        title, body,
+        title,
+        body,
         target_type: targetType,
         target_user_id: targetType === 'individual' ? targetUserId : null,
-        created_by: user.id,
+        created_by: adminUser.id,
       })
-      .select()
+      .select('id')
       .single()
+    if (insertError || !announcement) throw insertError ?? new Error('お知らせを保存できませんでした。')
 
-    if (insertError || !announcement) {
-      setError('保存に失敗しました。')
-      setSending(false)
-      return
-    }
-
-    const { error: fnError } = await supabase.functions.invoke('send-announcement', {
+    const { error: functionError } = await sessionClient.functions.invoke('send-announcement', {
       body: {
         announcement_id: announcement.id,
-        title, body, target_type: targetType,
+        title,
+        body,
+        target_type: targetType,
         target_user_id: targetType === 'individual' ? targetUserId : undefined,
       },
     })
-
-    if (fnError) {
-      setError('送信に失敗しました。')
-      setSending(false)
-      return
+    if (functionError) {
+      await admin.from('announcements').delete().eq('id', announcement.id)
+      throw functionError
     }
 
-    router.push('/dashboard/announcements')
+    redirect('/dashboard/announcements')
   }
 
   return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-bold mb-6">お知らせ作成</h1>
-      <form onSubmit={handleSend} className="bg-gray-800 rounded-xl p-6 space-y-4">
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-bold mb-2">お知らせ作成</h1>
+      <p className="text-sm text-gray-500 mb-6">全体・男女別・個別にプッシュ通知を送信します。</p>
+      <form action={sendAnnouncement} className="bg-gray-900/80 border border-white/10 rounded-2xl p-6 space-y-5">
         <div>
           <label className="block text-sm text-gray-400 mb-1">タイトル</label>
-          <input
-            value={title} onChange={(e) => setTitle(e.target.value)} required
-            className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-amber-400 focus:outline-none"
-          />
+          <input name="title" required maxLength={80} className="admin-input" />
         </div>
         <div>
           <label className="block text-sm text-gray-400 mb-1">本文</label>
-          <textarea
-            value={body} onChange={(e) => setBody(e.target.value)} required rows={4}
-            className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-amber-400 focus:outline-none resize-none"
-          />
+          <textarea name="body" required maxLength={300} rows={5} className="admin-input resize-none" />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-2">送信先</label>
-          <div className="flex gap-3">
-            {([['all_male','男性全員'], ['all_female','女性全員'], ['individual','個別']] as const).map(([v, l]) => (
-              <button
-                key={v} type="button"
-                onClick={() => setTargetType(v)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
-                  targetType === v ? 'bg-amber-500 text-gray-900' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
+          <label className="block text-sm text-gray-400 mb-1">送信先</label>
+          <select name="target_type" required defaultValue="all" className="admin-input">
+            <option value="all">全ユーザー</option>
+            <option value="all_male">男性全員</option>
+            <option value="all_female">女性全員</option>
+            <option value="individual">ユーザー個別</option>
+          </select>
+          <p className="text-xs text-gray-600 mt-2">個別送信を選んだ場合のみ、下のユーザーが使用されます。</p>
         </div>
-        {targetType === 'individual' && (
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">ユーザー検索</label>
-            <div className="flex gap-2">
-              <input
-                value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="ニックネームで検索"
-                className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none"
-              />
-              <button type="button" onClick={handleSearch}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm transition">
-                検索
-              </button>
-            </div>
-            {searchResults.length > 0 && (
-              <ul className="mt-2 bg-gray-900 rounded-lg border border-gray-700">
-                {searchResults.map((u) => (
-                  <li key={u.id}>
-                    <button
-                      type="button"
-                      onClick={() => { setTargetUserId(u.id); setUserSearch(u.nickname); setSearchResults([]) }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-800 transition ${
-                        targetUserId === u.id ? 'text-amber-400' : 'text-white'
-                      }`}
-                    >
-                      {u.nickname}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-        <button
-          type="submit" disabled={sending}
-          className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-gray-900 font-bold rounded-lg transition"
-        >
-          {sending ? '送信中...' : '送信する'}
-        </button>
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">個別送信先</label>
+          <select name="target_user_id" defaultValue="" className="admin-input">
+            <option value="">選択しない</option>
+            {(users ?? []).map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.nickname}（{user.role === 'cast' ? '女性' : '男性'}）
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold rounded-xl transition">
+            送信する
+          </button>
+          <a href="/dashboard/announcements" className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-center rounded-xl transition">
+            キャンセル
+          </a>
+        </div>
       </form>
     </div>
   )

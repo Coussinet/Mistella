@@ -19,7 +19,8 @@ export const stackScreenOptions = {
 export const tabBarStyles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    backgroundColor: COLORS.glassBgSolid,
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
     borderTopWidth: 0,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
@@ -39,16 +40,6 @@ export const tabBarStyles = StyleSheet.create({
   },
   tabBarItem: {
     minHeight: 52,
-  },
-  tabBarIcon: {
-    width: 42,
-    height: 28,
-    borderRadius: RADIUS.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabBarIconActive: {
-    backgroundColor: withAlpha(COLORS.gold, 0.14),
   },
   badge: {
     backgroundColor: COLORS.error,

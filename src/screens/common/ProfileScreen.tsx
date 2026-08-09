@@ -3,6 +3,7 @@
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
@@ -102,6 +103,23 @@ function GridItem({
           </Text>
         </View>
       )}
+      {item.media_url && item.content ? (
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.9)']}
+          style={styles.gridMessageOverlay}
+          pointerEvents="none"
+        >
+          <Text style={styles.gridMediaMessage} numberOfLines={2}>{item.content}</Text>
+        </LinearGradient>
+      ) : null}
+      <TouchableOpacity
+        style={styles.postMenuButton}
+        onPress={handleLongPress}
+        accessibilityRole="button"
+        accessibilityLabel="投稿の操作メニュー"
+      >
+        <MaterialIcons name="more-horiz" size={18} color={COLORS.text} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -582,6 +600,32 @@ const styles = StyleSheet.create({
   gridImage: {
     width: '100%',
     height: '100%',
+  },
+  gridMessageOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    minHeight: 54,
+    justifyContent: 'flex-end',
+    padding: 7,
+  },
+  gridMediaMessage: {
+    color: COLORS.text,
+    fontSize: 10.5,
+    lineHeight: 14,
+    fontWeight: '600',
+  },
+  postMenuButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.68)',
   },
   gridVideoPlaceholder: {
     backgroundColor: COLORS.surfaceLight,

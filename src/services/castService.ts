@@ -24,12 +24,23 @@ import { sendPushNotification } from '@/services/notificationService';
 export async function updateWorkStatus(
   userId: string,
   status: WorkStatus,
+  schedule?: { startsAt: string; endsAt: string },
 ): Promise<void> {
   const isWorking = status !== 'off';
+  const updates: {
+    work_status: WorkStatus;
+    is_working: boolean;
+    shift_starts_at?: string;
+    shift_ends_at?: string;
+  } = { work_status: status, is_working: isWorking };
+  if (status === 'working' && schedule) {
+    updates.shift_starts_at = schedule.startsAt;
+    updates.shift_ends_at = schedule.endsAt;
+  }
 
   const { error } = await supabase
     .from('cast_profiles')
-    .update({ work_status: status, is_working: isWorking })
+    .update(updates)
     .eq('user_id', userId);
 
   if (error) throw error;

@@ -1,9 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export default async function ReportDetailPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient()
+  const { admin: supabase } = await requireAdmin()
 
   const { data: report } = await supabase
     .from('reports')
@@ -26,13 +25,11 @@ export default async function ReportDetailPage({ params }: { params: { id: strin
     'use server'
     const status = formData.get('status') as string
     if (status !== 'reviewed' && status !== 'dismissed') throw new Error('Invalid status')
-    const admin = createAdminClient()
-    const { data: { user } } = await (await createClient()).auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const { admin, adminUser } = await requireAdmin()
     await admin.from('reports').update({
       status,
       reviewed_at: new Date().toISOString(),
-      reviewed_by: user.id,
+      reviewed_by: adminUser.id,
     }).eq('id', params.id)
     redirect('/dashboard/reports')
   }
@@ -40,7 +37,7 @@ export default async function ReportDetailPage({ params }: { params: { id: strin
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">通報詳細</h1>
-      <div className="bg-gray-800 rounded-xl p-6 space-y-4 mb-6">
+      <div className="bg-gray-900/80 border border-white/10 rounded-2xl p-6 space-y-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-gray-400 mb-1">通報者</p>

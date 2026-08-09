@@ -140,8 +140,40 @@ export async function createTimeline(
 
 /** 指定 ID のタイムライン投稿を削除する。 */
 export async function deleteTimeline(id: string): Promise<void> {
-  const { error } = await supabase.from('timelines').delete().eq('id', id);
+  const { data: post, error: findError } = await supabase
+    .from('timelines')
+    .select('media_url')
+    .eq('id', id)
+    .maybeSingle();
+  if (findError) throw findError;
+
+  const { data: deleted, error } = await supabase
+    .from('timelines')
+    .delete()
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
+  if (!deleted) throw new Error('投稿を削除する権限がありません。');
+
+  const storagePath = getMediaStoragePath(post?.media_url ?? null);
+  if (storagePath) {
+    // DB削除は完了しているため、Storage清掃の失敗で削除済み投稿を復活扱いにしない。
+    const { error: storageError } = await supabase.storage.from('media').remove([storagePath]);
+    if (storageError) console.warn('投稿メディアの削除に失敗しました。', storageError.message);
+  }
+}
+
+function getMediaStoragePath(publicUrl: string | null) {
+  if (!publicUrl) return null;
+  const marker = '/storage/v1/object/public/media/';
+  try {
+    const pathname = new URL(publicUrl).pathname;
+    const index = pathname.indexOf(marker);
+    return index >= 0 ? decodeURIComponent(pathname.slice(index + marker.length)) : null;
+  } catch {
+    return null;
+  }
 }
 
 // -----------------------------------------------------------

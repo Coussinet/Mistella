@@ -23,13 +23,8 @@ export default function LoginPage() {
 			return
 		}
 
-		const { data: adminUser } = await supabase
-			.from('users_admin')
-			.select('id')
-			.eq('id', data.user.id)
-			.maybeSingle()
-
-		if (!adminUser) {
+		const response = await fetch('/api/admin/session', { cache: 'no-store' })
+		if (!response.ok) {
 			await supabase.auth.signOut()
 			setError('管理者権限がありません。')
 			setLoading(false)
@@ -41,9 +36,10 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center px-4">
-			<div className="w-full max-w-sm">
-				<h1 className="text-2xl font-bold text-center mb-8 text-amber-400">Mistella 管理画面</h1>
+		<div className="min-h-screen flex items-center justify-center px-4 bg-[radial-gradient(circle_at_top,#282116_0%,#080b12_45%)]">
+			<div className="w-full max-w-sm rounded-3xl border border-white/10 bg-gray-950/75 backdrop-blur-xl p-8 shadow-2xl">
+				<p className="text-center text-[10px] uppercase tracking-[0.28em] text-gray-500 mb-2">Operations Console</p>
+				<h1 className="text-2xl font-bold text-center mb-8 text-amber-300">Mistella 管理画面</h1>
 				<form onSubmit={handleLogin} className="space-y-4">
 					<div>
 						<label className="block text-sm text-gray-400 mb-1">メールアドレス</label>

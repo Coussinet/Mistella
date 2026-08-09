@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { AppUser } from '@/types'
+import { requireAdmin } from '@/lib/admin/auth'
 
 interface Props {
 	role: 'customer' | 'cast'
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default async function UserListPage({ role, basePath }: Props) {
-	const supabase = await createClient()
+	const { admin: supabase } = await requireAdmin()
 	const { data: users } = await supabase
 		.from('users')
 		.select('id, nickname, bio, is_premium, is_blocked, created_at, avatar_url')
@@ -19,8 +19,9 @@ export default async function UserListPage({ role, basePath }: Props) {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold mb-6">{title}</h1>
-			<div className="bg-gray-800 rounded-xl overflow-hidden">
+			<h1 className="text-2xl font-bold mb-2">{title}</h1>
+			<p className="text-sm text-gray-500 mb-6">編集、利用停止、完全削除を管理できます。</p>
+			<div className="bg-gray-900/80 border border-white/10 rounded-2xl overflow-x-auto">
 				<table className="w-full text-sm">
 					<thead className="bg-gray-700 text-gray-400">
 						<tr>
@@ -34,7 +35,10 @@ export default async function UserListPage({ role, basePath }: Props) {
 					<tbody>
 						{(users as AppUser[] ?? []).map((u) => (
 							<tr key={u.id} className="border-t border-gray-700 hover:bg-gray-750">
-								<td className="px-4 py-3 font-medium">{u.nickname}</td>
+								<td className="px-4 py-3 font-medium">
+									<div>{u.nickname}</div>
+									<div className="text-[10px] text-gray-600 font-mono">{u.id}</div>
+								</td>
 								<td className="px-4 py-3 text-gray-400">{new Date(u.created_at).toLocaleDateString('ja-JP')}</td>
 								<td className="px-4 py-3">
 									{u.is_premium

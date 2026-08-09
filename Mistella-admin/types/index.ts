@@ -24,6 +24,8 @@ export interface CastProfile {
 	is_sponsored: boolean
 	is_working: boolean
 	work_status: 'working' | 'break' | 'off'
+	shift_starts_at: string | null
+	shift_ends_at: string | null
 }
 
 export type ReportReason = 'spam' | 'inappropriate_content' | 'harassment' | 'other'
@@ -47,7 +49,7 @@ export interface Announcement {
 	id: string
 	title: string
 	body: string
-	target_type: 'all_male' | 'all_female' | 'individual'
+	target_type: 'all' | 'all_male' | 'all_female' | 'individual'
 	target_user_id: string | null
 	sent_at: string | null
 	created_by: string

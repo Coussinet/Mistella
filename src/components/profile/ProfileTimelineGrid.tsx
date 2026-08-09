@@ -5,6 +5,7 @@
 // ============================================================
 
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/colors';
@@ -21,6 +22,7 @@ export const GRID_ITEM_SIZE = (SCREEN_WIDTH - 4) / 3;
 // -----------------------------------------------------------
 
 export function TimelineGridItem({ item }: { item: Timeline }) {
+  const hasMedia = !!item.media_url;
   return (
     <View style={styles.gridItem}>
       {item.media_url && item.media_type === 'image' ? (
@@ -36,6 +38,15 @@ export function TimelineGridItem({ item }: { item: Timeline }) {
           </Text>
         </View>
       )}
+      {hasMedia && item.content ? (
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.86)']}
+          style={styles.messageOverlay}
+          pointerEvents="none"
+        >
+          <Text style={styles.mediaMessage} numberOfLines={2}>{item.content}</Text>
+        </LinearGradient>
+      ) : null}
     </View>
   );
 }
@@ -75,6 +86,21 @@ const styles = StyleSheet.create({
   gridImage: {
     width: '100%',
     height: '100%',
+  },
+  messageOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    minHeight: 54,
+    justifyContent: 'flex-end',
+    padding: 7,
+  },
+  mediaMessage: {
+    color: COLORS.text,
+    fontSize: 10.5,
+    lineHeight: 14,
+    fontWeight: '600',
   },
   gridVideo: {
     backgroundColor: COLORS.surfaceLight,

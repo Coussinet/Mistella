@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mistella Admin
 
-## Getting Started
+Mistellaの運営者向けNext.js管理画面です。利用者アプリへ管理権限やSupabase Secretキーを配布せず、管理操作はServer Component / Server Actionから実行します。
 
-First, run the development server:
+## 主な機能
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 男性・女性ユーザーの検索、編集、利用停止、完全削除
+- 全ユーザー・男性・女性・個別のお知らせ送信
+- 投稿と添付メディアの削除
+- 通報対応とブロック関係の確認
+- 女性キャストの店舗情報・Sponsored設定
+
+## 環境変数
+
+`.env.local` に次を設定します。`SUPABASE_SERVICE_ROLE_KEY` はブラウザへ公開しないでください。
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_OR_SECRET_KEY
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 管理者の登録
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+管理者本人をSupabase Authenticationへ登録後、同じUUIDを `public.users_admin` に追加します。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sql
+INSERT INTO public.users_admin (id, email, name)
+VALUES ('AUTH_USER_UUID', 'admin@example.com', '運営管理者');
+```
 
-## Learn More
+ログイン済みであっても `users_admin` に存在しないユーザーは管理画面・Server Action・お知らせ送信関数を利用できません。
 
-To learn more about Next.js, take a look at the following resources:
+## 起動・検証
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+開発時は `http://localhost:3000` を開きます。本番公開前に、ルートプロジェクトのSupabaseマイグレーションと `send-announcement` Edge Functionを反映してください。

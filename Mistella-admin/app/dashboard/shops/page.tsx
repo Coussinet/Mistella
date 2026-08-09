@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export default async function ShopsPage() {
-  const supabase = await createClient()
+  const { admin: supabase } = await requireAdmin()
   const { data: shops } = await supabase
     .from('cast_profiles')
     .select(`
@@ -15,7 +15,7 @@ export default async function ShopsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">店舗管理</h1>
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
+      <div className="bg-gray-900/80 border border-white/10 rounded-2xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-700 text-gray-400">
             <tr>

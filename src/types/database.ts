@@ -147,6 +147,8 @@ export type Database = {
           personality: string | null
           price_info: string | null
           service_style: string | null
+          shift_ends_at: string | null
+          shift_starts_at: string | null
           shop_address: string | null
           shop_name: string | null
           updated_at: string | null
@@ -176,6 +178,8 @@ export type Database = {
           personality?: string | null
           price_info?: string | null
           service_style?: string | null
+          shift_ends_at?: string | null
+          shift_starts_at?: string | null
           shop_address?: string | null
           shop_name?: string | null
           updated_at?: string | null
@@ -205,6 +209,8 @@ export type Database = {
           personality?: string | null
           price_info?: string | null
           service_style?: string | null
+          shift_ends_at?: string | null
+          shift_starts_at?: string | null
           shop_address?: string | null
           shop_name?: string | null
           updated_at?: string | null

@@ -11,8 +11,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  LiquidGlassTabBackground,
+  LiquidGlassTabIcon,
+} from '@/components/common/LiquidGlassTabBar';
 import { stackScreenOptions, tabBarStyles } from '@/navigation/navigationTheme';
 import { COLORS } from '@/constants/colors';
 import { useAppStore } from '@/store/appStore';
@@ -260,6 +263,7 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
           tabBarItemStyle: tabBarStyles.tabBarItem,
           tabBarAllowFontScaling: false,
           tabBarHideOnKeyboard: true,
+          tabBarBackground: () => <LiquidGlassTabBackground />,
         };
       }}
     >
@@ -274,14 +278,7 @@ export default function AppTabNavigator({ role }: { role: UserRole }) {
             options={{
               tabBarLabel: tab.label,
               tabBarIcon: ({ color, focused }) => (
-                <View
-                  style={[
-                    tabBarStyles.tabBarIcon,
-                    focused && tabBarStyles.tabBarIconActive,
-                  ]}
-                >
-                  <MaterialIcons name={tab.icon} size={23} color={color} />
-                </View>
+                <LiquidGlassTabIcon name={tab.icon} color={color} focused={focused} />
               ),
               tabBarBadge: badgeCount > 0 ? badgeCount : undefined,
               tabBarBadgeStyle: tabBarStyles.badge,

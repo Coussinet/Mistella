@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -280,7 +281,16 @@ function CastWorkHeader() {
       <Text style={styles.workHeaderLabel}>出勤ステータス</Text>
       <WorkStatusToggle
         current={castProfile.work_status}
-        onChange={(status) => updateMutation.mutate(status)}
+        onChange={(status) => {
+          if (status === 'working') {
+            Alert.alert(
+              '出勤時間を設定してください',
+              '「おしごと」タブの出勤管理から、出勤・退勤予定を入力して開始できます。',
+            );
+            return;
+          }
+          updateMutation.mutate({ status });
+        }}
         disabled={updateMutation.isPending}
       />
     </View>
